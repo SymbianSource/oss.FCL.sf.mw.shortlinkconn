@@ -1,0 +1,66 @@
+/*
+* Copyright (c) 2002 Nokia Corporation and/or its subsidiary(-ies).
+* All rights reserved.
+* This component and the accompanying materials are made available
+* under the terms of "Eclipse Public License v1.0"
+* which accompanies this distribution, and is available
+* at the URL "http://www.eclipse.org/legal/epl-v10.html".
+*
+* Initial Contributors:
+* Nokia Corporation - initial contribution.
+*
+* Contributors:
+*
+* Description:  ?Description
+*
+*/
+
+#include <platform_paths.hrh>
+#include "../obexserviceirsend/inc/IrSendingServiceUIDS.hrh"
+
+#include <data_caging_paths.hrh>
+
+TARGET          obexserviceirsend.dll
+TARGETTYPE      PLUGIN
+UID             0x10009d8d KIRSendingServiceDllUid
+
+CAPABILITY	CAP_ECOM_PLUGIN
+VENDORID 	VID_DEFAULT
+
+
+SOURCEPATH	    ../obexserviceirsend/src
+SOURCE          IRClient.cpp
+SOURCE          IRSendingService.cpp
+SOURCE 		    IRSSProvider.cpp
+
+// Plugin resources are placed in z:/system/libs/plugins
+//
+SOURCEPATH	    ../obexserviceirsend/data
+START RESOURCE 001F86A2.rss
+#ifdef SYMBIAN_SECURE_ECOM 
+TARGET obexserviceirsend.rsc
+#endif 
+END
+
+SOURCEPATH      ../obexserviceirsend/data
+START RESOURCE  irssmenu.rss
+TARGETPATH      RESOURCE_FILES_DIR
+HEADER
+LANGUAGE_IDS
+END
+
+
+USERINCLUDE     ../obexserviceirsend/inc
+SYSTEMINCLUDE  ../../inc ../../../inc  /epoc32/include/ecom
+MW_LAYER_SYSTEMINCLUDE
+
+LIBRARY         euser.lib               // Base library
+LIBRARY         servicehandler.lib      // Application InterWorking
+LIBRARY         obexutils.lib           // Tools for bt sending
+LIBRARY         irobex.lib
+LIBRARY         irda.lib
+LIBRARY         efsrv.lib
+LIBRARY         featmgr.lib
+DEBUGLIBRARY    flogger.lib             // File logging services
+
+//  End of File

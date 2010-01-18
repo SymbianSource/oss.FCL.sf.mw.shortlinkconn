@@ -1,0 +1,31 @@
+/*
+* Copyright (c) 2002 Nokia Corporation and/or its subsidiary(-ies).
+* All rights reserved.
+* This component and the accompanying materials are made available
+* under the terms of "Eclipse Public License v1.0"
+* which accompanies this distribution, and is available
+* at the URL "http://www.eclipse.org/legal/epl-v10.html".
+*
+* Initial Contributors:
+* Nokia Corporation - initial contribution.
+*
+* Contributors:
+*
+* Description:  ?Description
+*
+*/
+
+
+#ifndef BT_SENDING_SERVICE_UIDS_HRH
+#define BT_SENDING_SERVICE_UIDS_HRH
+
+#define KBTSendingServiceDllUid   0x101F86A2
+#define KBTSendingServiceIfaceUid 0x101F8650 // KAiwClassBase
+#define KBTSendingServiceBaseImplUid  0x101F86A3
+#define KBTSendingServiceMenuImplUid  0x20002777
+
+#endif
+
+
+
+// End of File
