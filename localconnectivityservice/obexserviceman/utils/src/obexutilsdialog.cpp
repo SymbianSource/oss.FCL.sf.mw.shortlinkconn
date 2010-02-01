@@ -99,9 +99,7 @@ CObexUtilsDialog::~CObexUtilsDialog()
     FLOG(_L("[OBEXUTILS]\t CObexUtilsDialog::~CObexUtilsDialog()"));
 
     CCoeEnv::Static()->DeleteResourceFile( iResourceFileId );
-    delete iProgressDialog;
     delete iObexDialogTimer;
-    delete iWaitDialog;
 
     FLOG(_L("[OBEXUTILS]\t CObexUtilsDialog::~CObexUtilsDialog() completed"));
     }
@@ -168,7 +166,8 @@ EXPORT_C void CObexUtilsDialog::LaunchWaitDialogL( TInt aResId )
         }
 
     iWaitDialog = new( ELeave ) CAknWaitDialog(
-        ( reinterpret_cast<CEikDialog**>( &iWaitDialog ) ), ETrue );
+            ( reinterpret_cast<CEikDialog**>( &iWaitDialog ) ), EFalse );
+    
     iWaitDialog->SetCallback( this );
     PrepareDialogExecuteL( aResId, iWaitDialog );
     iWaitDialog->ExecuteLD( aResId );
@@ -185,7 +184,9 @@ EXPORT_C void CObexUtilsDialog::CancelWaitDialogL()
 
     if( iWaitDialog )
         {
+        iWaitDialog->SetCallback(NULL);
         iWaitDialog->ProcessFinishedL();
+        iWaitDialog = NULL;
         }
 
     FLOG(_L("[OBEXUTILS]\t CObexUtilsDialog::CancelWaitDialogL() completed"));

@@ -289,6 +289,7 @@ EXPORT_C TBool TObexUtilsUiLayer::ShowGlobalFileOpenConfirmationQueryL( const TI
     
     // Initiate query dialog
     TRequestStatus status = KRequestPending;
+    
     CAknGlobalConfirmationQuery* pQ = CAknGlobalConfirmationQuery::NewL();
     CleanupStack::PushL(pQ);
     pQ->ShowConfirmationQueryL(status, manipString, R_AVKON_SOFTKEYS_YES_NO);

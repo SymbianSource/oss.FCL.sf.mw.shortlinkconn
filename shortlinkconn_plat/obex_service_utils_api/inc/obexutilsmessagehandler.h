@@ -206,6 +206,17 @@ class TObexUtilsMessageHandler
                                                    TFileName& aFullName,
                                                    RFile& aFile,
                                                    const TDesC& aSenderBluetoothName);
+        
+        /**
+         * Add an entry to Inbox
+         * @Since S60 v5.0
+         * @param aMsvIdParent Parent message entry
+         * @param aFullName Contains the full path and file name of the file
+         * @return None
+         */
+        IMPORT_C static void AddEntryToInboxL( TMsvId& aMsvIdParent,
+                                               TFileName& aFullName);
+                                               
         /**
          * Add an entry to Inbox
          * @Since S60 v5.0

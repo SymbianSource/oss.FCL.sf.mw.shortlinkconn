@@ -109,9 +109,16 @@ CBTSBPPController* CBTSBPPController::NewL( MBTServiceObserver* aObserver,
 // Destructor
 CBTSBPPController::~CBTSBPPController()
     {
-    delete iClient;
-    delete iServer;
-    delete iServerWait;
+    if ( iServer )
+        {
+        delete iServer;
+        iServer = NULL;
+        }
+    if ( iServerWait )
+        {            
+        delete iServerWait;
+        iServerWait = NULL;
+        }
     }
 
 
@@ -311,8 +318,11 @@ void CBTSBPPController::WaitComplete()
     // For some reason the printer didn't establish server connection although
     // there were referenced objects
     //
-    delete iServerWait;
-    iServerWait = NULL;
+    if ( iServerWait )
+        {   
+        delete iServerWait;
+        iServerWait = NULL;
+        }
 
     // The client was waiting for server, but now another object 
     // can be sent.

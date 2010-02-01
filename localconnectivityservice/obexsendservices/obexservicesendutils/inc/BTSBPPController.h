@@ -162,6 +162,8 @@ NONSHARABLE_CLASS (CBTSBPPController) : public CBTSController,
 
     private:    // Data
         
+        // Owned
+        //
         CBTSBPPObjectServer*        iServer;
         CBTSBPPServerWait*          iServerWait;
 

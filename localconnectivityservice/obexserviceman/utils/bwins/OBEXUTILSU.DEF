@@ -57,4 +57,5 @@ EXPORTS
 	?RemoveTemporaryRFileL@TObexUtilsMessageHandler@@SAXABV?$TBuf@$0BAA@@@@Z @ 56 NONAME ; void TObexUtilsMessageHandler::RemoveTemporaryRFileL(class TBuf<256> const &)
 	?LaunchFileManagerL@TObexUtilsUiLayer@@SAXAAVTDesC16@@HH@Z @ 57 NONAME ; void TObexUtilsUiLayer::LaunchFileManagerL(class TDesC16 &, int, int)
 	?SaveFileToFileSystemL@TObexUtilsMessageHandler@@SAXAAPAVCObexBufObject@@VTUid@@AAJAAV?$TBuf@$0BAA@@@AAVRFile@@ABVTDesC16@@@Z @ 58 NONAME ; void TObexUtilsMessageHandler::SaveFileToFileSystemL(class CObexBufObject * &, class TUid, long &, class TBuf<256> &, class RFile &, class TDesC16 const &)
+	?AddEntryToInboxL@TObexUtilsMessageHandler@@SAXAAJAAV?$TBuf@$0BAA@@@@Z @ 59 NONAME ; void TObexUtilsMessageHandler::AddEntryToInboxL(long &, class TBuf<256> &)
 

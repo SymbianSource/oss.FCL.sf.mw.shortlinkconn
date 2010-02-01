@@ -177,36 +177,46 @@ void CSrcsServiceManager::DoCancel()
 void CSrcsServiceManager::RealDoManageServiceL(TSrcsTransport aTransport, TBool aState)
     {    
     FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: RealDoManageServiceL"));
-    CArrayPtr<CSrcsTransport>* connectionArray=NULL;
-    TPtrC8 transportName;
 
     switch(aTransport)
         {
     case ESrcsTransportBT:
-	    FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: ManageServicesL(Bluetooth)"));
-        transportName.Set(KSrcsTransportBT);
-        connectionArray = iBTConnectionArray;
+        FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: ManageServicesL(Bluetooth)"));
+        iTransportName.Set(KSrcsTransportBT);
+        ServiceArray(*iBTConnectionArray, aState);
         break;
     case ESrcsTransportUSB:
-	    FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: ManageServicesL(USB)"));
-        transportName.Set(KSrcsTransportUSB);
-        connectionArray = iUSBConnectionArray;        
+        FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: ManageServicesL(USB)"));
+        iTransportName.Set(KSrcsTransportUSB);
+        ServiceArray(*iUSBConnectionArray, aState);
         break;
     case ESrcsTransportIrDA:
-	    FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: ManageServicesL(IrDA)"));
-        transportName.Set(KSrcsTransportIrDA);
-        connectionArray = iIrDAConnectionArray;
+        FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: ManageServicesL(IrDA)"));
+        iTransportName.Set(KSrcsTransportIrDA);
+        ServiceArray(*iIrDAConnectionArray, aState);
         break;
     default:
         FTRACE(FPrint(_L("[SRCS]\tserver\tCSrcsServiceManager: ManageServicesL. Transport not supported.")));
-        iErrorState = KErrNotSupported;              
+        User::Leave(KErrNotSupported);              
         }
+        
+    }
+
+// ---------------------------------------------------------
+// CSrcsServiceManager
+// Method to manage Service arrays
+// ---------------------------------------------------------
+//     
+void CSrcsServiceManager::ServiceArray(CArrayPtr<CSrcsTransport> &aTransport, TBool aState)
+    {
+    FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: ServiceArray"));
+
     // We start and stop services by aState value
     if ( aState ) // trun on service
         {
 	    FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: ManageServicesL(Turn ON)"));
         // We do not re-start services if they have been started        
-        if ( connectionArray && !(connectionArray->Count()) )
+        if (!(aTransport.Count()))
             {   			
 			//Declare array of service controllers
             RImplInfoPtrArray infoArrayServiceController;                        
@@ -219,7 +229,7 @@ void CSrcsServiceManager::RealDoManageServiceL(TSrcsTransport aTransport, TBool 
 
             //List all SRCS transport plugin implementations
             FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: ManageServicesL about to list Transport Impl"));
-            CSrcsTransport::ListImplementationsL(transportName,infoArrayTranport);
+            CSrcsTransport::ListImplementationsL(iTransportName,infoArrayTranport);
 
 			//Found SRCS transport plugin. Then start to enumerate service controller and make connections.
             if(infoArrayTranport.Count())
@@ -233,7 +243,7 @@ void CSrcsServiceManager::RealDoManageServiceL(TSrcsTransport aTransport, TBool 
                 FTRACE(FPrint(_L("[SRCS]\tserver\tCSrcsServiceManager: ManageServicesL. Using Transport ImplementationUid %x"), infoArrayTranport[0]->ImplementationUid()));
 
 				//enumerate service controllers
-                CSrcsInterface::ListImplementationsL(transportName,infoArrayServiceController);
+                CSrcsInterface::ListImplementationsL(iTransportName,infoArrayServiceController);
 
                 // Loop through each found service controller, 
                 // create SRCS transport connection for each found service controller
@@ -255,7 +265,7 @@ void CSrcsServiceManager::RealDoManageServiceL(TSrcsTransport aTransport, TBool 
                     else
                         {
                         // Add this connection to the list
-                        connectionArray->AppendL(cm);
+                        aTransport.AppendL(cm);
                         FTRACE(FPrint(_L("[SRCS]\tserver\tCSrcsServiceManager: ManageServicesL: Implementation created successfully.")));
                         }
                     }
@@ -274,8 +284,8 @@ void CSrcsServiceManager::RealDoManageServiceL(TSrcsTransport aTransport, TBool 
         }
     else // turn off service
         {
-	    FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: ManageServicesL(Turn OFF)"));          	        
-        connectionArray->ResetAndDestroy();                 
+        FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: ManageServicesL(Turn OFF)"));    	        
+        aTransport.ResetAndDestroy();                 
         }        
     FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: RealDoManageServiceL exit"));
     }    

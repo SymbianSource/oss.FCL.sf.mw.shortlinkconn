@@ -104,7 +104,6 @@ private:
     inline TBool ReceivingIndicatorActive() const { return (iProgressDialog || iWaitDialog); }
     void UpdateReceivingIndicator();
     void CloseReceivingIndicator(TBool aResetDisplayedState = ETrue);
-    void ShowFileReceivedQueryL();
     TInt GetDriveWithMaximumFreeSpaceL();
     
 private:
@@ -146,7 +145,6 @@ private: // Data
     CBTDeviceArray*             iResultArray;
     TBTDeviceName               iRemoteDeviceName;
     TFileName                   iReceivingFileName;
-    RArray<TMsvId>              iMsvIdArray;
     TFileName                   iCenRepFolder;
     };
     

@@ -254,12 +254,12 @@ void TObexUtilsMessageHandler::FinaliseMessageL(
     // Save the size of all the attachment & make visible.
     TMsvEntry parentTEntry = aParentEntry->Entry();
     parentTEntry.iDate = GetCurrentTime();
-    parentTEntry.iSize = aFileEntry.iSize; 
-    parentTEntry.SetUnread(EFalse);    
+    parentTEntry.iSize = aFileEntry.iSize;  
     // Saved OK. Make the entry visible and flag it as complete.
     parentTEntry.SetVisible(ETrue);                   // visible
+    parentTEntry.SetUnread(ETrue);
     parentTEntry.SetInPreparation(EFalse);            // complete
-    parentTEntry.iDescription.Set(aFileNameParser.Name());  // "Subject"
+    parentTEntry.iDescription.Set(aFileNameParser.FullName());        // "Subject" 
     aParentEntry->ChangeL(parentTEntry);              // commit changes
     aStore->CommitL();
     
@@ -841,7 +841,7 @@ EXPORT_C void TObexUtilsMessageHandler::SaveFileToFileSystemL(
     TMsvEntry parentTEntry;   
     parentTEntry.iMtm = aMtmId;
     parentTEntry.SetVisible(EFalse); // Make invisible..
-    parentTEntry.SetUnread(EFalse);  // Msgs received via bluetooth will always be set to READ.
+    parentTEntry.SetUnread(ETrue);  //  Set msg to Unread
         
     // ...and in preparation to make sure it gets cleaned up on errors.
     //
@@ -945,67 +945,66 @@ EXPORT_C void TObexUtilsMessageHandler::SaveFileToFileSystemL(
 //
 EXPORT_C void TObexUtilsMessageHandler::AddEntryToInboxL( 
     TMsvId& aMsvIdParent,
-    TFileName& aFullName,
-    RArray<TMsvId>* aMsvIdArray)
+    TFileName& aFullName)
     {
     FLOG(_L("[OBEXUTILS]\t TObexUtilsMessageHandler::AddEntryToInboxL() "));
-    
+        
     CDummySessionObserver* sessionObs;
     CMsvSession* msvSession;
     CreateMsvSessionLC(sessionObs, msvSession);
     // 1st, 2nd push
-    
+        
     CMsvEntry* parentEntry = msvSession->GetEntryL(aMsvIdParent);
     CleanupStack::PushL(parentEntry);  // 3th push
     
     CMsvEntry* attachEntry = msvSession->GetEntryL(((*parentEntry)[0]).Id());
     CleanupStack::PushL(attachEntry); // 4th push
-        
+            
     CMsvStore* store = attachEntry->EditStoreL();
     CleanupStack::PushL( store );  // 5th push
-    
+        
     CObexutilsEntryhandler* entryHandler = CObexutilsEntryhandler::NewL();
     CleanupStack::PushL(entryHandler);  // 6th push  
-            
+                
     CMsvAttachment* attachInfo = CMsvAttachment::NewL(CMsvAttachment::EMsvLinkedFile);
     CleanupStack::PushL(attachInfo);  // 7th push
-       
+           
     // Create attachment Info
     //
     RFs& fsSess = msvSession->FileSession();
-    
+        
     TParse fileNameParser;
     User::LeaveIfError(fileNameParser.Set(aFullName, NULL, NULL));
-    attachInfo->SetAttachmentNameL(fileNameParser.NameAndExt());
-             
+    attachInfo->SetAttachmentNameL( fileNameParser.FullName());
+                 
     TEntry fileEntry;
     User::LeaveIfError(fsSess.Entry( fileNameParser.FullName(), fileEntry) );
     attachInfo->SetSize(fileEntry.iSize);
-        
+            
     // check if it's the bio message
-       
+           
     TUid bioMsgId;  // SaveMimeAndGetBioLC modifies this
     CBIODatabase* bioDB = SaveMimeAndGetBioLC( aFullName, fsSess, attachInfo, bioMsgId );
     // 8th push
     if (bioDB)  // bio message
         {
         FLOG(_L("[OBEXUTILS]\t TObexUtilsMessageHandler::AddEntryToInboxL() BIO"));
-        
+    
         RFile file;
         User::LeaveIfError(file.Open(fsSess,aFullName,EFileRead));
         TReceivedData receivedData;
         receivedData.bytesReceived = fileEntry.iSize;
         receivedData.recTime = fileEntry.iModified;
-        receivedData.msgName = fileNameParser.Name();
-                
+        receivedData.msgName = fileNameParser.Name();     
+                    
         StoreAndUpdateBioMessageL( bioDB, bioMsgId, parentEntry, file );
         FinaliseMessageL(parentEntry, receivedData, store, ETrue);
         TMsvId attachId = attachEntry->EntryId();
         file.Close();
         fsSess.Delete(aFullName);
         CleanupStack::PopAndDestroy(5);  // bioDB, attachInfo, linkHandler,
-                                         // store, attachEntry
-        
+                                             // store, attachEntry
+            
         // PopAndDestroying here because open store locks the entry,
         // it can be deleted only after destroying the store pointer
         parentEntry->DeleteL(attachId);  // invalidate unused attachment
@@ -1022,16 +1021,22 @@ EXPORT_C void TObexUtilsMessageHandler::AddEntryToInboxL(
         CleanupStack::PopAndDestroy(entryHandler);  // entryHandler
         FinaliseMessageL(parentEntry, store,fileEntry, fileNameParser);
         CleanupStack::PopAndDestroy(5);         // linkHandler, attachInfo, store, attachEntry,
-                                                // parentEntry, msvSession, sessionObs
-        
-        // File Link is created in INBOX successfully,
-        // We add MsvId to array.
-        //
-        aMsvIdArray->Append(aMsvIdParent);
-        
+                                                    // parentEntry, msvSession, sessionObs                            
         FLOG(_L("[OBEXUTILS]\t TObexUtilsMessageHandler::AddEntryToInboxL() completed "));
         }
-       
+    }
+
+// -----------------------------------------------------------------------------
+// CObexUtilsMessageHandler::AddEntryToInboxL
+// -----------------------------------------------------------------------------
+//
+EXPORT_C void TObexUtilsMessageHandler::AddEntryToInboxL( 
+    TMsvId& aMsvIdParent,
+    TFileName& aFullName,
+    RArray<TMsvId>* aMsvIdArray)
+    {
+    AddEntryToInboxL(aMsvIdParent, aFullName);
+    aMsvIdArray->Append(aMsvIdParent);
     }
 
 // -----------------------------------------------------------------------------
