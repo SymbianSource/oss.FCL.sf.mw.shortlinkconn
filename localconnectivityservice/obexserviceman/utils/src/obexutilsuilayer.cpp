@@ -22,12 +22,26 @@
 #include "obexutilsdebug.h"
 
 #include <SecondaryDisplay/obexutilssecondarydisplayapi.h>
-#include <obexutils.rsg>
+#include <Obexutils.rsg>
 #include <aknnotewrappers.h>
 #include <AknGlobalConfirmationQuery.h>
 #include <eikon.rsg>
 #include <avkon.rsg>
+#ifdef NO101APPDEPFIXES
 #include <muiu.mbg>
+#else   //NO101APPDEPFIXES
+enum TMuiuConsts
+    {
+    EMbmMuiuQgn_prop_mce_ir_unread = 16402,
+    EMbmMuiuQgn_prop_mce_ir_unread_mask = 16403,
+    EMbmMuiuQgn_prop_mce_ir_read = 16404,
+    EMbmMuiuQgn_prop_mce_ir_read_mask = 16405,
+    EMbmMuiuQgn_prop_mce_bt_unread = 16406,
+    EMbmMuiuQgn_prop_mce_bt_unread_mask = 16407,
+    EMbmMuiuQgn_prop_mce_bt_read = 16408,
+    EMbmMuiuQgn_prop_mce_bt_read_mask = 16409
+    };
+#endif  //NO101APPDEPFIXES
 #include <bautils.h>
 #include <featmgr.h>
 
@@ -39,11 +53,12 @@
 #include <apgcli.h>
 #include <apacmdln.h>
 #include <AknLaunchAppService.h>  //  Used to launch file manager in embedded mode.
+#include <e32property.h> //for checking backup status
 
-
+//Constants
+const TInt KFileManagerUID3 = 0x101F84EB; /// File Manager application UID3
 const TInt KUiNumberOfZoomStates = 2;          // second for the mask
 const TInt KSortNumMax = 2;
-
 
 // ============================ MEMBER FUNCTIONS ===============================
 
@@ -95,7 +110,7 @@ EXPORT_C void TObexUtilsUiLayer::LaunchFileManagerL(
         inParams->AppendL(TAiwGenericParam( EGenericParamDir, TAiwVariant( aPath ) ) );
         inParams->AppendL(TAiwGenericParam( EGenericParamDir, TAiwVariant( aSortMethod ) ) );
        
-        CAknLaunchAppService* launchService = CAknLaunchAppService::NewL(TUid::Uid( 0x101F84EB ), // Use File Manager app UID directly
+        CAknLaunchAppService* launchService = CAknLaunchAppService::NewL(TUid::Uid( KFileManagerUID3 ), // Use File Manager app UID directly
                                                                          NULL, 
                                                                          inParams ); 
         CleanupStack::PopAndDestroy( inParams );
@@ -108,7 +123,7 @@ EXPORT_C void TObexUtilsUiLayer::LaunchFileManagerL(
         RApaLsSession apaLsSession;
         User::LeaveIfError( apaLsSession.Connect() );
         CleanupClosePushL( apaLsSession );
-        User::LeaveIfError( apaLsSession.GetAppInfo( appInfo, TUid::Uid( 0x101F84EB ) ) ); // Use File Manager app UID directly
+        User::LeaveIfError( apaLsSession.GetAppInfo( appInfo, TUid::Uid( KFileManagerUID3 ) ) ); // Use File Manager app UID directly
         CApaCommandLine* apaCmdLine = CApaCommandLine::NewLC();
         apaCmdLine->SetExecutableNameL( appInfo.iFullName );
         apaCmdLine->SetCommandL( EApaCommandOpen );
@@ -509,6 +524,32 @@ EXPORT_C void TObexUtilsUiLayer::CreateIconsL(
     }
 
 // -----------------------------------------------------------------------------
+// TObexUtilsUiLayer::IsBackupRunning
+// -----------------------------------------------------------------------------
+//
+EXPORT_C TBool TObexUtilsUiLayer::IsBackupRunning()
+    {
+    const TUint32 KFileManagerBkupStatus = 0x00000001;
+    
+    TInt status = EFileManagerBkupStatusUnset;
+    TBool retValue = EFalse;
+    TInt err = RProperty::Get( TUid::Uid(KFileManagerUID3), KFileManagerBkupStatus,
+                              status );
+    if ( err == KErrNone )
+        {
+        if ( status == EFileManagerBkupStatusBackup || 
+             status == EFileManagerBkupStatusRestore )
+            {
+            TSecureId fileManagerSecureId( KFileManagerUID3 );
+            //only returning ETrue if backup process is still active
+            retValue = ProcessExists( fileManagerSecureId );
+            }
+        }
+   
+    return retValue;
+    }
+
+// -----------------------------------------------------------------------------
 // TObexUtilsUiLayer::PrepareDialogExecuteL
 // -----------------------------------------------------------------------------
 //
@@ -538,4 +579,28 @@ TBool TObexUtilsUiLayer::IsCoverDisplayL()
     return coverDisplay;
     }
 
+// -----------------------------------------------------------------------------
+// TObexUtilsUiLayer::ProcessExists
+// -----------------------------------------------------------------------------
+//
+TBool TObexUtilsUiLayer::ProcessExists( const TSecureId& aSecureId )
+    {
+    _LIT( KFindPattern, "*" );
+    TFindProcess finder(KFindPattern);
+    TFullName processName;
+    while( finder.Next( processName ) == KErrNone )
+        {
+        RProcess process;
+        if ( process.Open( processName ) == KErrNone )
+            {
+            TSecureId processId( process.SecureId() );
+            process.Close();
+            if( processId == aSecureId )
+                {
+                return ETrue;
+                }
+            }
+        }
+    return EFalse;
+    }
 //  End of File  

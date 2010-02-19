@@ -23,7 +23,7 @@
 #include "BTSUDebug.h"
 
 #include <obexheaders.h>
-#include <obexutils.rsg>
+#include <Obexutils.rsg>
 #include <obexutilsuilayer.h>
 
 // CONSTANTS

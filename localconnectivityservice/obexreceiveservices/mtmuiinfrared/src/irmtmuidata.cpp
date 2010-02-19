@@ -29,7 +29,7 @@
 #include <mtmdef.hrh> //kuidmtmquerymaxbodysizevalue etc
 #include <mtmuidsdef.hrh> //kuidmtmquerymaxbodysizevalue etc
 #endif
-#include <obexutils.rsg>
+#include <Obexutils.rsg>
 #include <MtmExtendedCapabilities.hrh>
 #include <obexutilsmessagehandler.h>
 #include "debug.h"

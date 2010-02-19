@@ -25,7 +25,7 @@
 #include <AknCommonDialogsDynMem.h>     // for memory and file selection dialogs
 #include <CommonDialogs.rsg>
 #include <pathinfo.h>                   // for getting drive root path
-#include <obexutils.rsg>
+#include <Obexutils.rsg>
 #include <AknGlobalNote.h>
 #include <StringLoader.h>
 #include <AiwGenericParam.h>

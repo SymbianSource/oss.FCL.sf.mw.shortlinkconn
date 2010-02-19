@@ -24,7 +24,7 @@
 #include "BTSBIPController.h"
 #include "BTSBPPController.h"
 
-#include <obexutils.rsg>
+#include <Obexutils.rsg>
 #include <obexutilsuilayer.h>
 #include <obexutilsmessagehandler.h>
 #include <btnotif.h>

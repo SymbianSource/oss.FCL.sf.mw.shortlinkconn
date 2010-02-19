@@ -29,7 +29,7 @@
 #include    <obexutilsuilayer.h>
 #include    <obexutilsdialog.h>
 #include    <UiklafInternalCRKeys.h>
-#include    <obexutils.rsg>
+#include    <Obexutils.rsg>
 #include    <sysutil.h>
 #include    <bautils.h>
 #include    <pathinfo.h>                   // provides interface for quering system paths 
@@ -252,6 +252,17 @@ CObexBufObject* CBIPController::PutRequestIndication()
     TRACE_FUNC_ENTRY
     iLengthHeaderReceived = EFalse; // New put request so clear header based state
     iBTTransferState = ETransferPut;
+    
+    // Checking if backup is running now - if backup process is active, then we
+    // need to cancel transfer - otherwise phone will freeze during receiving
+    // data
+    if ( TObexUtilsUiLayer::IsBackupRunning() )
+        {
+        TRACE_INFO ( _L ("Backup in progress! Canceling incoming transfer."));
+        iBTTransferState = ETransferPutInitError;
+        return NULL;
+        }
+        
     TRAPD(err, HandlePutImageRequestL());
     if (err == KErrNone)
         {

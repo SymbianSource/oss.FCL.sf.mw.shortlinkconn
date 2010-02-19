@@ -27,7 +27,7 @@
 #include <mtmuidef.hrh>
 #include <mtclreg.h>
 #include <obexutilsuilayer.h>
-#include <obexutils.rsg>
+#include <Obexutils.rsg>
 #include <msvuids.h>
 #include <msvids.h>
 #include <obexconstants.h>
