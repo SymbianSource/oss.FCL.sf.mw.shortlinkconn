@@ -16,6 +16,7 @@
 */
 
 
+#include <atext_interfaceuid.h>
 #include <registryinfo.rh>
 
 // Declares info for two implementations
@@ -29,7 +30,7 @@ RESOURCE REGISTRY_INFO theInfo
 		INTERFACE_INFO
 			{
 			// UID of interface that is implemented
-			interface_uid = 0x2001CBEE;  // ATEXT_INTERFACE_DUN_UID
+			interface_uid = ATEXT_INTERFACE_DUN_UID; 
 			implementations =
 				{
 				// Info for BTSAC
@@ -38,7 +39,7 @@ RESOURCE REGISTRY_INFO theInfo
 					implementation_uid = 0x20021375;
 					version_no = 1;
 					display_name = "LC Custom Plugin DUN";
-					default_data=  "PAT+CLAC";
+					default_data=  "MAT+CLAC";
 					opaque_data = "";
 					}
 				};
@@ -46,7 +47,7 @@ RESOURCE REGISTRY_INFO theInfo
 		INTERFACE_INFO
 			{
 			// UID of interface that is implemented
-			interface_uid = 0x2001CBEF;  // ATEXT_INTERFACE_HFP_UID
+			interface_uid = ATEXT_INTERFACE_HFP_UID; 
 			implementations =
 				{
 				// Info for BTSAC
@@ -55,7 +56,7 @@ RESOURCE REGISTRY_INFO theInfo
 					implementation_uid = 0x20021376;
 					version_no = 1;
 					display_name = "LC Custom Plugin HFP";
-					default_data=  "PAT+CLAC";
+					default_data=  "MAT+CLAC";
 					opaque_data = "";
 					}
 				};

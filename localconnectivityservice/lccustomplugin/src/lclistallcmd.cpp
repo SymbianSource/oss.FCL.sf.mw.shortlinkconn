@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2009 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -15,15 +15,13 @@
 *
 */
 
-
 #include "lclistallcmd.h"
 #include "debug.h"
 
-_LIT8( KListAllQueryCmd, "AT+CLAC=?" );
-_LIT8( KListAllCmd,      "AT+CLAC"   );
-
 const TInt KCrLfLength    = 2;  // CR+LF
 const TInt KOkReplyLength = 6;  // CR+LF+"OK"+CR+LF
+
+_LIT8( KClacCmd, "AT+CLAC" );
 
 // ---------------------------------------------------------------------------
 // Two-phased constructor.
@@ -69,28 +67,42 @@ void CLcListAllCmd::ConstructL()
     }
 
 // ---------------------------------------------------------------------------
+// Checks command types
+// ---------------------------------------------------------------------------
+//
+TBool CLcListAllCmd::CheckCommand( const TDesC8& aCmd )
+    {
+    TRACE_FUNC_ENTRY
+    // The AT+CLAC command supports two types: base and test
+    iCmdHandlerType = iCallback->CheckCommandType( KClacCmd, aCmd );
+    if ( iCmdHandlerType==ECmdHandlerTypeBase ||
+         iCmdHandlerType==ECmdHandlerTypeTest )
+        {
+        iDetectedCmd = EDetectedCmdCLAC;
+        TRACE_FUNC_EXIT
+        return ETrue;
+        }
+    TRACE_FUNC_EXIT
+    return EFalse;
+    }
+
+// ---------------------------------------------------------------------------
 // Reports the support status of an AT command. This is a synchronous API.
 // ---------------------------------------------------------------------------
 //
 TBool CLcListAllCmd::IsCommandSupported( const TDesC8& aCmd )
     {
     TRACE_FUNC_ENTRY
-    TInt retTemp = KErrNone;
-    retTemp = aCmd.Compare( KListAllQueryCmd );
-    if ( retTemp == 0 )
+    // Set all to undefined if either the command or its type is unknown
+    // HandleCommand() should be round only when both are set
+    TBool cmdUnderstood = CheckCommand( aCmd );
+    if ( cmdUnderstood )
         {
-        iCmdHandlerType = ECmdHandlerTypeQuery;
-        TRACE_FUNC_EXIT
-        return ETrue;
-        }
-    retTemp = aCmd.Compare( KListAllCmd );
-    if ( retTemp == 0 )
-        {
-        iCmdHandlerType = ECmdHandlerTypeList;
         TRACE_FUNC_EXIT
         return ETrue;
         }
     iCmdHandlerType = ECmdHandlerTypeUndefined;
+    iDetectedCmd = EDetectedCmdUndefined;
     TRACE_FUNC_EXIT
     return EFalse;
     }
@@ -102,7 +114,7 @@ TBool CLcListAllCmd::IsCommandSupported( const TDesC8& aCmd )
 // ---------------------------------------------------------------------------
 //
 void CLcListAllCmd::HandleCommand( const TDesC8& /*aCmd*/,
-                                   RBuf8& aReply,
+                                   RBuf8& /*aReply*/,
                                    TBool aReplyNeeded )
     {
     TRACE_FUNC_ENTRY
@@ -111,52 +123,45 @@ void CLcListAllCmd::HandleCommand( const TDesC8& /*aCmd*/,
         TRACE_FUNC_EXIT
         return;
         }
-    if ( iCmdHandlerType == ECmdHandlerTypeQuery )
+    if ( iCmdHandlerType == ECmdHandlerTypeTest )
         {
-        iCallback->CreateReplyAndComplete( EReplyTypeOk,
-                                           aReply );
+        iCallback->CreateReplyAndComplete( EReplyTypeOk );
         TRACE_FUNC_EXIT
         return;
         }
-    // Else here means ECmdHandlerTypeList
+    // Else here means ECmdHandlerTypeBase
     // First check the quiet mode and verbose mode.
     // These are handled in CreateReplyAndComplete()
     TInt retTemp;
     TBool quietMode = EFalse;
-    TBool verboseMode = EFalse;
     retTemp  = iCallback->GetModeValue( EModeTypeQuiet, quietMode );
-    retTemp |= iCallback->GetModeValue( EModeTypeVerbose, verboseMode );
     if ( retTemp != KErrNone )
         {
-        iCallback->CreateReplyAndComplete( EReplyTypeError,
-                                           aReply );
-        TRACE_FUNC_EXIT
-        return;
-        }
-    if ( quietMode || !verboseMode )
-        {
-        iCallback->CreateReplyAndComplete( EReplyTypeOther,
-                                           aReply );
+        iCallback->CreateReplyAndComplete( EReplyTypeError );
         TRACE_FUNC_EXIT
         return;
         }
     RBuf8 reply;
+    if ( quietMode )
+        {
+        iCallback->CreateReplyAndComplete( EReplyTypeOther, reply );
+        reply.Close();
+        TRACE_FUNC_EXIT
+        return;
+        }
     TBool error = CreateSupportedList( reply );
     if ( error )
         {
-        iCallback->CreateReplyAndComplete( EReplyTypeError,
-                                           aReply );
+        iCallback->CreateReplyAndComplete( EReplyTypeError );
         reply.Close();
         TRACE_FUNC_EXIT
         return;
         }
     RBuf8 okReply;
     iCallback->CreateOkOrErrorReply( okReply, ETrue );
-    reply.Append( okReply);
+    reply.Append( okReply );
     okReply.Close();
-    iCallback->CreateReplyAndComplete( EReplyTypeOther,
-                                       aReply,
-                                       reply );
+    iCallback->CreateReplyAndComplete( EReplyTypeOther, reply );
     reply.Close();
     TRACE_FUNC_EXIT
     }
@@ -199,6 +204,7 @@ TBool CLcListAllCmd::CreateSupportedList( RBuf8& aReply )
             linearSize += KCrLfLength;
             }
         }
+    linearSize += KCrLfLength;
     // Now we have the length of the linear region,
     // use that to create the reply
     TChar carriageReturn;
@@ -223,6 +229,8 @@ TBool CLcListAllCmd::CreateSupportedList( RBuf8& aReply )
             aReply.Append( lineFeed );
             }
         }
+    aReply.Append( carriageReturn );
+    aReply.Append( lineFeed );
     // Delete the array as it is no longer needed
     commands.ResetAndDestroy();
     commands.Close();

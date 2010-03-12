@@ -45,7 +45,7 @@
 _LIT8(KBipCapabilityType, "x-bt/img-capabilities\0");
 
 
-const TInt    KBufferSize = 0x4000;  // 16kB
+const TInt    KBufferSize = 0x10000;  // 64 kB
 
 // ================= MEMBER FUNCTIONS =======================
 

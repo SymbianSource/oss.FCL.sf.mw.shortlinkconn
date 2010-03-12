@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2009 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -11,23 +11,14 @@
 *
 * Contributors:
 *
-* Description:  Handles the commands "AT+CLAC?" and "AT+CLAC"
+* Description:  Handles the commands "AT+CLAC=?" and "AT+CLAC"
 *
 */
-
 
 #ifndef C_LCLISTALLCMD_H
 #define C_LCLISTALLCMD_H
 
 #include "lccustomplugin.h"
-
-/**  Handler types for the two AT commands */
-enum TCmdHandlerType
-    {
-    ECmdHandlerTypeUndefined,
-    ECmdHandlerTypeQuery,  // For command "AT+CLAC=?"
-    ECmdHandlerTypeList    // For command "AT+CLAC"
-    };
 
 /**
  *  Class for handling commands "AT+CLAC=?" and "AT+CLAC"
@@ -56,6 +47,25 @@ private:
     CLcListAllCmd( MLcCustomPlugin* aCallback );
 
     void ConstructL();
+
+    /**
+     * Checks command types
+     *
+     * @since TB9.2
+     * @param aCmd Command to check
+     * @return ETrue if command understood, EFalse otherwise
+     */
+    TBool CheckCommand( const TDesC8& aCmd );
+
+    /**
+     * Main command handler (leaving version)
+     *
+     * @since TB9.2
+     * @return ETrue if command understood, EFalse otherwise
+     */
+    TBool HandleCommandL();
+
+// from base class MLcCustomPluginBase
 
     /**
      * Reports the support status of an AT command. This is a synchronous API.
@@ -125,6 +135,11 @@ private:  // data
      * Handler type for the two AT commands
      */
     TCmdHandlerType iCmdHandlerType;
+
+    /**
+     * Detected command
+     */
+    TDetectedCmd iDetectedCmd;
 
 };
 

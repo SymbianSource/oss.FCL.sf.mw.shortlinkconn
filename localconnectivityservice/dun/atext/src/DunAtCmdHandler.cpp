@@ -1467,11 +1467,13 @@ TBool CDunAtCmdHandler::ManageVerboseModeChange( TUint aMode )
         if ( aMode & KModeVerbose )  // verbose mode ON
             {
             iAtCmdExt.ReportVerboseModeChange( ETrue );
+            iVerboseOn = ETrue;
             FTRACE(FPrint( _L("CDunAtCmdHandler::NotifyVerboseStatusChange() verbose mode changed ON" ) ));
             }
         else  // verbose mode OFF
             {
             iAtCmdExt.ReportVerboseModeChange( EFalse );
+            iVerboseOn = EFalse;
             FTRACE(FPrint( _L("CDunAtCmdHandler::NotifyVerboseStatusChange() verbose mode changed OFF" ) ));
             }
         FTRACE(FPrint( _L("CDunAtCmdHandler::ManageVerboseModeChange() (change) complete" ) ));

@@ -27,21 +27,8 @@
 #include <AknGlobalConfirmationQuery.h>
 #include <eikon.rsg>
 #include <avkon.rsg>
-#ifdef NO101APPDEPFIXES
 #include <muiu.mbg>
-#else   //NO101APPDEPFIXES
-enum TMuiuConsts
-    {
-    EMbmMuiuQgn_prop_mce_ir_unread = 16402,
-    EMbmMuiuQgn_prop_mce_ir_unread_mask = 16403,
-    EMbmMuiuQgn_prop_mce_ir_read = 16404,
-    EMbmMuiuQgn_prop_mce_ir_read_mask = 16405,
-    EMbmMuiuQgn_prop_mce_bt_unread = 16406,
-    EMbmMuiuQgn_prop_mce_bt_unread_mask = 16407,
-    EMbmMuiuQgn_prop_mce_bt_read = 16408,
-    EMbmMuiuQgn_prop_mce_bt_read_mask = 16409
-    };
-#endif  //NO101APPDEPFIXES
+
 #include <bautils.h>
 #include <featmgr.h>
 
