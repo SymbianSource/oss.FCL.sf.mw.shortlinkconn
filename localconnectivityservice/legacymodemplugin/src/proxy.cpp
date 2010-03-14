@@ -16,7 +16,7 @@
 */
 
 #include <e32base.h>
-#include <ECom\ImplementationProxy.h>
+#include <ecom/implementationproxy.h>
 #include "legacymodemplugin.h"
 
 // ---------------------------------------------------------------------------

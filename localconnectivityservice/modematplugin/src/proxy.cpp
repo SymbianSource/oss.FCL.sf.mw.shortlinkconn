@@ -20,7 +20,7 @@
 #define REFERENCE_ATEXT_H
 
 #include <e32base.h>
-#include <ECom\ImplementationProxy.h>
+#include <ecom/implementationproxy.h>
 #include "modematplugin.h"
 
 // ---------------------------------------------------------------------------

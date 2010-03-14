@@ -67,7 +67,6 @@ LIBRARY			avkon.lib
 LIBRARY			cone.lib 
 LIBRARY			commonengine.lib
 LIBRARY			efsrv.lib
-LIBRARY                 platformenv.lib
 
 LIBRARY			flogger.lib
 

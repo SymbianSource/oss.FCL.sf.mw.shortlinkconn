@@ -488,17 +488,17 @@ TBool CDunAtCmdHandler::RegenerateOkReply()
         }
     if ( iVerboseOn )
         {
-        _LIT8( KVerboseError, "OK" );
+        _LIT8( KVerboseOk, "OK" );
         iOkBuffer.Append( iCarriageReturn );
         iOkBuffer.Append( iLineFeed );
-        iOkBuffer.Append( KVerboseError );
+        iOkBuffer.Append( KVerboseOk );
         iOkBuffer.Append( iCarriageReturn );
         iOkBuffer.Append( iLineFeed );
         }
     else
         {
-        _LIT8( KNumericError, "4" );
-        iOkBuffer.Append( KNumericError );
+        _LIT8( KNumericOk, "0" );
+        iOkBuffer.Append( KNumericOk );
         iOkBuffer.Append( iCarriageReturn );
         }
     FTRACE(FPrint( _L("CDunAtCmdHandler::RegenerateOkReply() complete") ));

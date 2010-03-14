@@ -17,7 +17,6 @@
 
 #include "debug.h"
 #include "lcstylustapdismount.h"
-#include "driveinfo.h"
 
 // ---------------------------------------------------------------------------
 // Destructor.
@@ -126,15 +125,17 @@ void CLcStylusTapDismount::DisMountUsbDrives()
 //
 void CLcStylusTapDismount::DoDismount()
     {
-    TRACE_FUNC    
-    TUint driveStatus( 0 );
-    
+    TRACE_FUNC        
+    TDriveInfo info;
+    TInt err = KErrNone;
     for ( ; iDriveIndex < KMaxDrives; iDriveIndex++ )
         {
         if ( iDriveList[iDriveIndex] )
             {
-            DriveInfo::GetDriveStatus( iRFs, iDriveIndex, driveStatus );            
-            if ( driveStatus & DriveInfo::EDriveUsbMemory )
+            err = iRFs.Drive( info , iDriveIndex );            
+            if ( info.iConnectionBusType == EConnectionBusUsb &&                 
+                 info.iDriveAtt & KDriveAttExternal && 
+                 err == KErrNone  )
                 {
                 TRACE_INFO(_L("CLcStylusTapDismount::DoDismount Dismount notify request "));    
                 iRFs.NotifyDismount( iDriveIndex, iStatus, EFsDismountNotifyClients );                
