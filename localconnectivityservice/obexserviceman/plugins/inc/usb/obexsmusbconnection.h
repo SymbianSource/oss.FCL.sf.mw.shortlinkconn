@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2002-2007 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2002-2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -55,8 +55,13 @@ public:
 	*		  EFalse: OBEX service is inactive.
 	*/
 	TBool IsOBEXActive();
-	
-	
+	    
+   /** 
+    * Perform any outstanding initialization tasks
+    *
+    * @return none.
+    */
+   void PostInitializeL();
 
 private:
 
@@ -96,7 +101,8 @@ private:
 private:
     CObexServer* iServer;                               // Obex Server
     CSrcsInterface* iController;                        // Service Controller callback
-    CImplementationInformation* iImplementationInfo;    // Implementation Info        
+    CImplementationInformation* iImplementationInfo;    // Implementation Info    
+    TUid iImplUid;
     };
 
 #endif      // OBEXSMUSBCONNECTION_H

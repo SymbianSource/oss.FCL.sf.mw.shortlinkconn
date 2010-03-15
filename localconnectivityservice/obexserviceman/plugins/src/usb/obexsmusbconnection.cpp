@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2002-2007 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2002-2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -95,11 +95,10 @@ CObexSMUsbConnection* CObexSMUsbConnection::NewL(TAny* aInitParams)
 //
 void CObexSMUsbConnection::ConstructL()
     {    
-    // Create service controller implementation object
-    iController = CSrcsInterface::NewL(iImplementationInfo->ImplementationUid());
-    FLOG(_L("[SRCS] CSrcsUsbConnection: ConstructL: CSrcsInterface::NewL\t"));
+    // Save service controller implementation UID for deferred initialization
+    iImplUid = iImplementationInfo->ImplementationUid();
 
-	iController->SetMediaType( ESrcsMediaUSB );
+    FLOG(_L("[SRCS] CSrcsUsbConnection: ConstructL: CSrcsInterface::NewL\t"));
 
     // parsing opaque_data in iImplementationInfo
     TPtrC8 res_string = iImplementationInfo->OpaqueData();
@@ -173,25 +172,14 @@ void CObexSMUsbConnection::ConstructL()
 	// Try to create OBEX server
 	iServer = CObexServer::NewL(obexUsbProtocolInfo, aObexProtocolPolicy);
     FLOG(_L("[SRCS] CSrcsUsbConnection: ConstructL: CObexServer::NewL"));
-
-    
-    
-    FLOG(_L("[SRCS] CSrcsUsbConnection: ConstructL: iServer->Start"));
-
-	FLOG(_L("[SRCS] CSrcsUsbConnection: ConstructL: SetObexServer\t"));
-	// Try to start server 
-	User::LeaveIfError ( iController->SetObexServer( iServer ));
-	
-
-    // we do not accept Obex passkey for USB transport, so do NOT set callback.
-    // iServer->SetCallBack( *this );
-
     // if there is "local who" field
     if(op_LocalWho.Size())
         {
         User::LeaveIfError ( iServer->SetLocalWho( op_LocalWho ) );
         FLOG(_L("[SRCS] CSrcsUsbConnection: ConstructL: SetLocalWho"));
-        }      
+        }
+    
+    // The rest of initialization procedure is executed in PostInitialzeL()
     }
 
 // ---------------------------------------------------------
@@ -218,5 +206,18 @@ TBool CObexSMUsbConnection::IsOBEXActive()
     FLOG( _L( "[SRCS] CSrcsUsbConnection: IsOBEXActive\t" ) );
 	return ETrue;	
 	}     
+
+void CObexSMUsbConnection::PostInitializeL()
+    {
+    FTRACE(FPrint(_L("[SRCS] CObexSMUsbConnection: PostInitializeL(%08X)"), iImplUid.iUid));
+
+    iController = CSrcsInterface::NewL(iImplUid);
+    iController->SetMediaType( ESrcsMediaUSB );
+
+    FLOG(_L("[SRCS] CObexSMUsbConnection::PostInitializeL(): SetObexServer\t"));
+    // Try to start server 
+    User::LeaveIfError ( iController->SetObexServer( iServer ));
+    FLOG( _L( "[SRCS] CObexSMUsbConnection: PostInitializeL() exits\t" ) );
+    }
 
 // End of file
