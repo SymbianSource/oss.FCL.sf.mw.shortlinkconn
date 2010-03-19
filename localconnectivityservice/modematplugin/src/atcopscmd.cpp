@@ -16,7 +16,7 @@
 */
 
 
-#include <MmTsy_names.h>
+#include <mmtsy_names.h>
 #include "atcopscmd.h"
 #include "cmdpluginobserver.h"
 #include "debug.h"

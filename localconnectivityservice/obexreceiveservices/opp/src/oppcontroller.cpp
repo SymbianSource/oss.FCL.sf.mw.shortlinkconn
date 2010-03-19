@@ -22,7 +22,7 @@
 #include    "btengdevman.h"
 #include    <obexutilsmessagehandler.h>
 #include    "debug.h"
-#include    <obexutils.rsg>
+#include    <Obexutils.rsg>
 #include    <bautils.h>
 #include    <UiklafInternalCRKeys.h>
 #include    <obexutilsuilayer.h>
@@ -37,7 +37,7 @@
 
 // CONSTANTS
 
-const TInt    KBufferSize = 0x4000;  // 16kB
+const TInt    KBufferSize = 0x10000;  // 64 kB
 
 // ================= MEMBER FUNCTIONS =======================
 
@@ -221,6 +221,17 @@ CObexBufObject* COPPController::PutRequestIndication()
     TRACE_FUNC
     iLengthHeaderReceived = EFalse; // New put request so clear header based state
     iObexTransferState = ETransferPut;
+    
+    // Checking if backup is running now - if backup process is active, then we
+    // need to cancel transfer - otherwise phone will freeze during receiving
+    // data
+    if ( TObexUtilsUiLayer::IsBackupRunning() )
+        {
+        TRACE_INFO ( _L ("Backup in progress! Canceling incoming transfer."));
+        iObexTransferState = ETransferPutInitError;
+        return NULL;
+        }
+    
     TRAPD(err, HandlePutRequestL());
     if(err == KErrNone)
         {

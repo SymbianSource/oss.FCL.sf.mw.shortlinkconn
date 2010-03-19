@@ -488,17 +488,17 @@ TBool CDunAtCmdHandler::RegenerateOkReply()
         }
     if ( iVerboseOn )
         {
-        _LIT8( KVerboseError, "OK" );
+        _LIT8( KVerboseOk, "OK" );
         iOkBuffer.Append( iCarriageReturn );
         iOkBuffer.Append( iLineFeed );
-        iOkBuffer.Append( KVerboseError );
+        iOkBuffer.Append( KVerboseOk );
         iOkBuffer.Append( iCarriageReturn );
         iOkBuffer.Append( iLineFeed );
         }
     else
         {
-        _LIT8( KNumericError, "4" );
-        iOkBuffer.Append( KNumericError );
+        _LIT8( KNumericOk, "0" );
+        iOkBuffer.Append( KNumericOk );
         iOkBuffer.Append( iCarriageReturn );
         }
     FTRACE(FPrint( _L("CDunAtCmdHandler::RegenerateOkReply() complete") ));
@@ -1467,11 +1467,13 @@ TBool CDunAtCmdHandler::ManageVerboseModeChange( TUint aMode )
         if ( aMode & KModeVerbose )  // verbose mode ON
             {
             iAtCmdExt.ReportVerboseModeChange( ETrue );
+            iVerboseOn = ETrue;
             FTRACE(FPrint( _L("CDunAtCmdHandler::NotifyVerboseStatusChange() verbose mode changed ON" ) ));
             }
         else  // verbose mode OFF
             {
             iAtCmdExt.ReportVerboseModeChange( EFalse );
+            iVerboseOn = EFalse;
             FTRACE(FPrint( _L("CDunAtCmdHandler::NotifyVerboseStatusChange() verbose mode changed OFF" ) ));
             }
         FTRACE(FPrint( _L("CDunAtCmdHandler::ManageVerboseModeChange() (change) complete" ) ));

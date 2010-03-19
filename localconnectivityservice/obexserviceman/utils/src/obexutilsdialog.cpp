@@ -23,7 +23,7 @@
 #include    <SecondaryDisplay/obexutilssecondarydisplayapi.h>
 #include    <aknnotewrappers.h>
 #include    <eikprogi.h>
-#include    <obexutils.rsg>
+#include    <Obexutils.rsg>
 #include    <e32def.h>
 #include    <bautils.h>
 #include    <StringLoader.h>
@@ -201,7 +201,9 @@ EXPORT_C void CObexUtilsDialog::CancelProgressDialogL()
 
     if( iProgressDialog )
         {        
+        iProgressDialog->SetCallback(NULL);
         iProgressDialog->ProcessFinishedL();
+        iProgressDialog = NULL;
 
         if ( iObexDialogTimer )
             {

@@ -27,7 +27,7 @@
 #include <mtmuidsdef.hrh>       //kuidmtmquerymaxbodysizevalue etc
 #endif
 #include <msvuids.h>
-#include <obexutils.rsg> 
+#include <Obexutils.rsg> 
 #include <obexutilsmessagehandler.h>
 
 

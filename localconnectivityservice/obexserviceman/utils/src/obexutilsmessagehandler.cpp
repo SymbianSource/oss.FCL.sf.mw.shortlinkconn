@@ -28,7 +28,7 @@
 #include <txtrich.h>
 
 #include <biouids.h>
-#include <obexutils.rsg>
+#include <Obexutils.rsg>
 #include <bautils.h>
 
 #include <e32property.h>
@@ -926,8 +926,6 @@ EXPORT_C void TObexUtilsMessageHandler::SaveFileToFileSystemL(
     // tempFullName will be updated in RenameFileL()    
     TInt error = RenameFileL(tempFullName, filename, parse.DriveAndPath(), fsSess);
     
-    
-    
     if ( error != KErrNone )
         {
         fsSess.Delete(tempFullName);   // If rename fails, we remove the temp RFile object.
@@ -1428,19 +1426,31 @@ TInt TObexUtilsMessageHandler::RenameFileL(
     const TDesC& aNewPath, 
     RFs& aFileSession)
     {
+    
     // We move the file to the final location
     //
     CFileMan* fileMan= CFileMan::NewL(aFileSession);
     CleanupStack::PushL(fileMan);       
-
-    fileMan->Move(aFileName,aNewPath,CFileMan::ERecurse );
-    CleanupStack::PopAndDestroy(fileMan); 
-    
+    TPtrC tmpNewPath;
     TParse fileParse;
     fileParse.Set(aFileName, NULL, NULL);
     
+    TInt error = fileMan->Move(aFileName,aNewPath,CFileMan::ERecurse );
+    
+    // if error while moving to new location, keep file in old location and change file name
+    if (error != KErrNone)
+        {
+        tmpNewPath.Set (fileParse.DriveAndPath()); 
+        }
+    else
+        {
+        tmpNewPath.Set (aNewPath);
+        }
+    
+    CleanupStack::PopAndDestroy(fileMan);
+
     TFileName tempFile;
-    tempFile.Append(aNewPath);
+    tempFile.Append(tmpNewPath);
     tempFile.Append(fileParse.NameAndExt());
     aFileName = tempFile;
     
@@ -1450,22 +1460,23 @@ TInt TObexUtilsMessageHandler::RenameFileL(
     
     TFileName newFullName;
     newFullName.Zero();
-    newFullName.Append(aNewPath);
+    newFullName.Append(tmpNewPath);
     newFullName.Append(aNewFileName);
     
-    aFileSession.SetSessionPath(aNewPath);
+    aFileSession.SetSessionPath(tmpNewPath);
     
     while ( BaflUtils::FileExists(aFileSession, newFullName) )    
         {
         segmentNum++;
         User::LeaveIfError( RenameFileWithSegmentNumL(aNewFileName, segmentNum, segmentString) );
         newFullName.Zero();
-        newFullName.Append(aNewPath);
+        newFullName.Append(tmpNewPath);
         newFullName.Append(aNewFileName);
         }
     // rename the file.
     //
-    TInt error = aFileSession.Rename(aFileName, newFullName);
+    error = aFileSession.Rename(aFileName, newFullName);
+
     aFileName = newFullName;
     
     return error;

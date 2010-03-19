@@ -32,6 +32,11 @@ HEADER
 LANGUAGE_IDS
 END
 
+OS_LAYER_SYSTEMINCLUDE
+USERINCLUDE ../inc
+NON_FOUNDATION_ADAPT_LAYER_SYSTEMINCLUDE
+
+
 SOURCEPATH    ../src
 SOURCE        obexutilsuilayer.cpp
 SOURCE        obexutilslaunchwaiter.cpp
@@ -48,12 +53,12 @@ SOURCE        updatemusiccollection.cpp
  SOURCE       vMessageHandler.cpp
 #endif
 
-
-USERINCLUDE   ../inc
-
 SYSTEMINCLUDE  ../../../inc ../../../../inc  
-MW_LAYER_SYSTEMINCLUDE
+#ifdef NO101APPDEPFIXES
 APP_LAYER_SYSTEMINCLUDE
+#else   //NO101APPDEPFIXES
+MW_LAYER_SYSTEMINCLUDE
+#endif  //NO101APPDEPFIXES
 // SMUT Unbranch
 #ifdef __BT_SAP
 SYSTEMINCLUDE   /epoc32/include/ecom

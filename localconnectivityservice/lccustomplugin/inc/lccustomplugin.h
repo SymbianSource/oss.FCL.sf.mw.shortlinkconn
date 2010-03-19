@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2009 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -15,7 +15,6 @@
 *
 */
 
-
 #ifndef C_LCCUSTOMPLUGIN_H
 #define C_LCCUSTOMPLUGIN_H
 
@@ -23,6 +22,7 @@
 
 class CLcCustomPlugin;
 
+/** Character types: carriage return, line feed or backspace */
 enum TCharacterTypes
     {
     ECharTypeCR,  // Carriage return
@@ -30,10 +30,28 @@ enum TCharacterTypes
     ECharTypeBS   // Backspace
     };
 
+/** Type of modes (quiet, verbose) */
 enum TModeTypes
     {
     EModeTypeQuiet,   // Quiet mode
     EModeTypeVerbose  // Verbose mode
+    };
+
+/**  Handler types for the four types */
+enum TCmdHandlerType
+    {
+    ECmdHandlerTypeUndefined = KErrNotFound,
+    ECmdHandlerTypeBase      = 0x01,  // For command "AT+COMMAND"
+    ECmdHandlerTypeSet       = 0x02,  // For command "AT+COMMAND="
+    ECmdHandlerTypeRead      = 0x04,  // For command "AT+COMMAND?"
+    ECmdHandlerTypeTest      = 0x08,  // For command "AT+COMMAND=?"
+    };
+
+/**  Detected commands */
+enum TDetectedCmd
+    {
+    EDetectedCmdUndefined,
+    EDetectedCmdCLAC  // For command "AT+CLAC"
     };
 
 /**
@@ -116,8 +134,6 @@ public:
      *
      * @since S60 5.0
      * @param aReplyType Type of reply
-     * @param aDstBuffer Destination buffer; used for the API requiring the
-     *                   AT command reply
      * @param aSrcBuffer Source buffer; used only if aReplyType is EReplyTypeOther
      * @param aError Completion code. If not KErrNone then other arguments are
      *               ignored and the request is completed to ATEXT with
@@ -125,7 +141,6 @@ public:
      * @return None
      */
     virtual TInt CreateReplyAndComplete( TATExtensionReplyType aReplyType,
-                                         RBuf8& aDstBuffer,
                                          const TDesC8& aSrcBuffer=KNullDesC8,
                                          TInt aError=KErrNone ) = 0;
 
@@ -140,6 +155,17 @@ public:
      */
     virtual TInt CreateOkOrErrorReply( RBuf8& aReplyBuffer,
                                        TBool aOkReply ) = 0;
+
+    /**
+     * Checks if the command is a base, set, read or test type of command
+     *
+     * @since TB9.2
+     * @param aCmdBase Base part of the command to check
+     * @param aCmdFull Full command to check
+     * @return Type of command
+     */
+    virtual TCmdHandlerType CheckCommandType( const TDesC8& aCmdBase,
+                                              const TDesC8& aCmdFull ) = 0;
 
     /**
      * Returns the array of supported commands
@@ -347,8 +373,6 @@ private:
      *
      * @since S60 5.0
      * @param aReplyType Type of reply
-     * @param aDstBuffer Destination buffer; used for the API requiring the
-     *                   AT command reply
      * @param aSrcBuffer Source buffer; used only if aReplyType is EReplyTypeOther
      * @param aError Completion code. If not KErrNone then other arguments are
      *               ignored and the request is completed to ATEXT with
@@ -356,7 +380,6 @@ private:
      * @return None
      */
     TInt CreateReplyAndComplete( TATExtensionReplyType aReplyType,
-                                 RBuf8& aDstBuffer,
                                  const TDesC8& aSrcBuffer=KNullDesC8,
                                  TInt aError=KErrNone );
 
@@ -372,6 +395,18 @@ private:
      */
     TInt CreateOkOrErrorReply( RBuf8& aReplyBuffer,
                                TBool aOkReply );
+
+    /**
+     * From MLcCustomPlugin.
+     * Checks if the command is a base, set, read or test type of command
+     *
+     * @since S60 5.0
+     * @param aCmdBase Base part of the command to check
+     * @param aCmdFull Full command to check
+     * @return Type of command
+     */
+    TCmdHandlerType CheckCommandType( const TDesC8& aCmdBase,
+                                      const TDesC8& aCmdFull );
 
     /**
      * From MLcCustomPlugin.
@@ -418,6 +453,18 @@ private:  // data
      * Used when IsCommandSupported() detects a matching handler class.
      */
     CLcCustomPluginBase* iHandler;
+
+    /**
+     * Buffer for handle command's command
+     * Not own.
+     */
+    const TDesC8* iHcCmd;
+
+    /**
+     * Buffer for handle command reply
+     * Not own.
+     */
+    RBuf8* iHcReply;
 
     /**
      * Global reply buffer for the AT command replies

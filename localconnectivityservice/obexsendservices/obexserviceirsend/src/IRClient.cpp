@@ -19,7 +19,7 @@
 
 // INCLUDE FILES
 #include <obexclient.h>
-#include <obexutils.rsg>
+#include <Obexutils.rsg>
 #include <obexutilsuilayer.h>
 
 #include "IRClient.h"

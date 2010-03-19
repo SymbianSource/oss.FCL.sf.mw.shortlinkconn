@@ -22,12 +22,14 @@
 #include "irmtmui.h"
 #include "debug.h"
 
-#include <MuiuMsvProgressReporterOperation.h>
-#include <ircmtm.h>
+#ifdef NO101APPDEPFIXES_NEW
+#include <app/ircmtm.h>
+#endif //NO101APPDEPFIXES_NEW
+
 #include <mtmuidef.hrh>
 #include <mtclreg.h>
 #include <obexutilsuilayer.h>
-#include <obexutils.rsg>
+#include <Obexutils.rsg>
 #include <msvuids.h>
 #include <msvids.h>
 #include <obexconstants.h>
@@ -35,9 +37,6 @@
 #include <aknnotewrappers.h> 	//For notifier
 #include <featmgr.h>
 #include <SecondaryDisplay/obexutilssecondarydisplayapi.h>
-
-const TInt KIrMtmUiConnectionTimeout     = 20000000;
-const TInt KIrMtmUiReceiveTimeout        = 0;
 
 // ================= MEMBER FUNCTIONS =======================
 
@@ -216,6 +215,14 @@ CMsvOperation* CIrMtmUi::EditL(TRequestStatus& aStatus)
         {
         case KUidMsvMessageEntryValue:
             {
+            return LaunchEditorApplicationL( aStatus, iBaseMtm.Entry().Session() );
+            /* Infrared is not supported anymore. Implementation for sending over Infrared is left for reference:
+            ( add #include <MuiuMsvProgressReporterOperation.h> to the included files )
+            ( add constants:
+                const TInt KIrMtmUiConnectionTimeout     = 20000000;
+                const TInt KIrMtmUiReceiveTimeout        = 0; )
+            code starts here:
+
             if( iBaseMtm.Entry().Entry().Parent() != KMsvDraftEntryId &&
                iBaseMtm.Entry().Entry().Parent() != KMsvGlobalOutBoxIndexEntryId )
                 {
@@ -304,6 +311,9 @@ CMsvOperation* CIrMtmUi::EditL(TRequestStatus& aStatus)
                 // ownership of reporter transfered to caller
                 return reporter; 
                 }
+
+                End of reference implementation for sending over Infrared:
+                */
             }
         case KUidMsvServiceEntryValue:
         case KUidMsvAttachmentEntryValue:
@@ -436,6 +446,11 @@ TInt CIrMtmUi::DisplayProgressSummary( const TDesC8& aProgress ) const
 //
 TInt CIrMtmUi::DisplayProgressSummaryL( const TDesC8& aProgress ) const
     {
+    #ifndef NO101APPDEPFIXES_NEW
+    (void) aProgress;
+    #endif //NO101APPDEPFIXES_NEW
+    
+    #ifdef NO101APPDEPFIXES_NEW
     FLOG( _L( "[IRU] CIrMtmUi: DisplayProgressSummaryL\t" ) );
     TInt resourceId;
     if( ( !aProgress.Length() ) || 
@@ -504,6 +519,7 @@ TInt CIrMtmUi::DisplayProgressSummaryL( const TDesC8& aProgress ) const
             }
         }
     FLOG( _L( "[IRU] CIrMtmUi: DisplayProgressSummaryL Done\t" ) );
+    #endif //NO101APPDEPFIXES_NEW
     return KErrNone;
     }
 
@@ -519,6 +535,16 @@ TInt CIrMtmUi::GetProgress( const TDesC8& aProgress,
                            TInt& aCurrentEntrySize, 
                            TInt& aCurrentBytesTrans ) const
     {
+    #ifndef NO101APPDEPFIXES_NEW
+    (void) aProgress;
+    (void) aReturnString;
+    (void) aTotalEntryCount;
+    (void) aEntriesDone;
+    (void) aCurrentEntrySize;
+    (void) aCurrentBytesTrans;	
+    #endif //NO101APPDEPFIXES_NEW
+    
+    #ifdef NO101APPDEPFIXES_NEW
     FLOG( _L( "[CIrMtmUi] CIrMtmUi: GetProgress\t" ) );
     TPckgBuf<TObexMtmProgress> paramPack;
     paramPack.Copy( aProgress );
@@ -565,6 +591,7 @@ TInt CIrMtmUi::GetProgress( const TDesC8& aProgress,
             }
         }
     FLOG( _L( "[CBtMtmUi] CBtMtmUi: GetProgress Done\t" ) );
+    #endif //NO101APPDEPFIXES_NEW
     return KErrNone;
     }
 

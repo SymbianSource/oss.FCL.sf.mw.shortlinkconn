@@ -22,7 +22,7 @@
 #include "BTSUDebug.h"
 #include "BTSUImageConverter.h"
 #include "BTSUXmlParser.h"
-#include <obexutils.rsg>
+#include <Obexutils.rsg>
 
 
 

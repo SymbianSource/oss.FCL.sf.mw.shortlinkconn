@@ -38,7 +38,7 @@ END
 SOURCEPATH      ../src
 USERINCLUDE     ../inc
 SYSTEMINCLUDE  ../../../inc ../../../../inc  
-APP_LAYER_SYSTEMINCLUDE
+MW_LAYER_SYSTEMINCLUDE
 
 SOURCE          irmtmui.cpp 
 SOURCE          irmtmuidata.cpp 
@@ -48,7 +48,7 @@ LIBRARY         obexutils.lib
 LIBRARY         euser.lib
 LIBRARY         msgs.lib
 LIBRARY         mtur.lib
-LIBRARY         muiu.lib
+// LIBRARY         muiu.lib // Used for forwarding messages over Infrared
 LIBRARY         featmgr.lib
 DEBUGLIBRARY	flogger.lib
 

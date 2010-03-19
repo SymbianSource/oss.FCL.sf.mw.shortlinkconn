@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2004-2009 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2004-2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -24,7 +24,23 @@
 #include <apgcli.h>
 #include <apgtask.h>
 #include <e32property.h>
+#ifdef NO101APPDEPFIXES
 #include <alarmuidomainpskeys.h>
+#else   //NO101APPDEPFIXES
+const TUid KPSUidAlarmExtCntl = { 0x102072D4 }; // reusing an AlarmUI dll UID
+const TUint32 KAlarmStopKey = 0x00000001;
+enum TAlarmUIStopAlarm
+    {
+    EAlarmUIStopAlarmUninitialized = 0,
+    EAlarmUIStopAlarm
+    };
+const TUint32 KAlarmSnoozeKey = 0x00000002;
+enum TAlarmUISnoozeAlarm
+    {
+    EAlarmUISnoozeAlarmUninitialized = 0,
+    EAlarmUISnoozeAlarm
+    };
+#endif  //NO101APPDEPFIXES
 
 #include <mpxplaybackmessage.h>
 #include <mpxmessagegeneraldefs.h>
@@ -40,6 +56,7 @@
 const TInt KHidUndefinedKeyCode = 0;
 const TInt KHidNotSetKeyValue = 0;
 const TInt KDoubleClickTimeout = 900000; // 0,9 seconds
+const TInt KDoubleClickTimeoutRing = 500000; // 0,5 seconds
 const TInt KScanClickTimeout = 500000; // 0,5 seconds
 const TInt KLongClickTimeout = 3000000; // 3 seconds
 
@@ -734,15 +751,47 @@ void CHidHeadsetDriver::HookKeyPres( TBool aStatus )
         switch ( hookStatus )
             {
             case EOnHook:
-                TRACE_INFO(_L("[HID]\tCHidHeadsetDriver Hook On Pressed"));
-                iOnHookPressed = ETrue;
-                break;
+                if ( !iIncomingCallStatus )
+                    {
+                    // For the first click, trigger the timer 
+                    // single click is handled in ExpiredDoubleClickTimer
+                    if ( iDoubleClicktimer )
+                        {
+                        delete iDoubleClicktimer;
+                        iDoubleClicktimer = NULL;
+                        }
+                    TRAP_IGNORE( iDoubleClicktimer = CKeyPressTimer::NewL( this,
+                        TTimeIntervalMicroSeconds32( KDoubleClickTimeoutRing ),
+                        EDoubleClickTimer ) );
+                    if ( iDoubleClicktimer )
+                        {
+                        iIncomingCallStatus = ETrue;
+                        }
+                    else // If fail to create timer, handle as single click, 
+                    // for double click case, the next click will hang off
+                        {
+                        iIncomingCallStatus = EFalse;
+                        iOnHookPressed = ETrue;
+                        }
+                    break; // switch
+                    }
+                else
+                    {
+                    iIncomingCallStatus = EFalse;
+                    if ( iDoubleClicktimer )
+                        {
+                        delete iDoubleClicktimer;
+                        iDoubleClicktimer = NULL;
+                        }
+                    // This is the double click case, handle as EOffHook
+                    }
+                // No break here
             case EOffHook:
                 TRACE_INFO(_L("[HID]\tCHidHeadsetDriver Hook Off Pressed"));
                 iOffHookPressed = ETrue;
                 break;
             case ENoHook:
-                TRACE_INFO(_L("[HID]\tCHidHeadsetDriver Hook None Pressed"));                
+                TRACE_INFO(_L("[HID]\tCHidHeadsetDriver Hook None Pressed")); 
                 TRAP_IGNORE( HandleNoneHookPressL() );                
                 break;
             default:
@@ -1030,7 +1079,7 @@ void CHidHeadsetDriver::TimerExpired( TTimerType aTimerType )
     switch ( aTimerType )
         {
         case EDoubleClickTimer:
-            ExpiredDubleClickTimer();
+            ExpiredDoubleClickTimer();
             break;
         case ELongPressTimer:
             ExpiredLongClickTimer();
@@ -1053,16 +1102,23 @@ void CHidHeadsetDriver::TimerExpired( TTimerType aTimerType )
     }
 
 // ---------------------------------------------------------------------------
-// ExpiredDubleClickTimer()
+// ExpiredDoubleClickTimer()
 // ---------------------------------------------------------------------------
 //
-void CHidHeadsetDriver::ExpiredDubleClickTimer()
+void CHidHeadsetDriver::ExpiredDoubleClickTimer()
     {
     TRACE_FUNC_ENTRY
     if ( iDoubleClicktimer )
         {
         delete iDoubleClicktimer;
         iDoubleClicktimer = NULL;
+        
+        if ( iIncomingCallStatus )
+            {
+            iIncomingCallStatus = EFalse;
+            iOnHookPressed = ETrue;
+            ReleaseHookKey();
+            }
         if ( iAlarmStatus )
             {
             RProperty::Set( KPSUidAlarmExtCntl, KAlarmStopKey,

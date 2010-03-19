@@ -70,7 +70,8 @@ RESOURCE MTM_INFO_FILE
 
 RESOURCE MTM_CAPABILITIES
     {
-    send_capability = 1; 
+//    send_capability = 1; 
+    send_capability = 0;
     body_capability = 1; 
     }
 

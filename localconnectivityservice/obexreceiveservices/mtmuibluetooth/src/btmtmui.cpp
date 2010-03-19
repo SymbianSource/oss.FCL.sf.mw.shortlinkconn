@@ -22,23 +22,31 @@
 #include "btmtmuidebug.h"
 
 //#include <obexmtmuilayer.h>
+#ifdef NO101APPDEPFIXES
 #include <MuiuMsvProgressReporterOperation.h>
-#include <btcmtm.h>
+#endif  //NO101APPDEPFIXES
+
+#ifdef NO101APPDEPFIXES_NEW 
+#include <app/btcmtm.h>
+#endif //NO101APPDEPFIXES_NEW
+
 #include <mtmuidef.hrh>
 #include <mtclreg.h>
 #include <obexutilsuilayer.h>
-#include <obexutils.rsg>
+#include <Obexutils.rsg>
 #include <msvuids.h>
 #include <msvids.h>
 #include <obexconstants.h>
 
 
 // CONSTANTS
+#ifdef NO101APPDEPFIXES
 const TInt KBtMtmUiToFromFieldBuffer     = 80;
 const TInt KBtMtmUiConnectionTimeout     = 20000000;
 const TInt KBtMtmUiConnectionPutTimeout  = 0;
 const TInt KBtMtmUiObexPort              = 1;
 const TInt KBtMtmUiAddressMaxLength      = 3;
+#endif  //NO101APPDEPFIXES
 
 // ENUMS
 enum TBtMtmAsyncCmds
@@ -223,8 +231,6 @@ CMsvOperation* CBtMtmUi::EditL( TRequestStatus& aStatus, const CMsvEntrySelectio
 CMsvOperation* CBtMtmUi::EditL( TRequestStatus& aStatus )
 	{
 	FLOG( _L( "[BtMtmUi] CBtMtmUi: EditL 2 \t" ) );
-    TInt resourceId;
-    TInt retVal=0;
 	switch( iBaseMtm.Entry().Entry().iType.iUid )
 		{
 	    case KUidMsvMessageEntryValue:
@@ -235,8 +241,10 @@ CMsvOperation* CBtMtmUi::EditL( TRequestStatus& aStatus )
 			    //   Edit/"use" entries in the Inbox
 			    return LaunchEditorApplicationL( aStatus, iBaseMtm.Entry().Session() );   
 			    }
+#ifdef NO101APPDEPFIXES
 		    else
 			    {
+			    TInt resourceId;
                 HBufC* password = HBufC::NewL(1);
                 CleanupStack::PushL( password );  // 1st push
                 BaseMtm().LoadMessageL();
@@ -254,7 +262,8 @@ CMsvOperation* CBtMtmUi::EditL( TRequestStatus& aStatus )
 				
 
                 if ( iDiscovery->SearchRemoteDevice( iDevice ) == KErrNone )
-				{ 
+                    {
+                    TInt retVal=0;
 				    iWaiter.Start();
 				    
 				    if ( iState ==KErrNone)
@@ -363,6 +372,7 @@ CMsvOperation* CBtMtmUi::EditL( TRequestStatus& aStatus )
                 CleanupStack::PopAndDestroy(3);  // waiter, sel,  password
                 return reporter;
 			    }
+#endif  //NO101APPDEPFIXES
 		    }
 	    case KUidMsvServiceEntryValue:
 	    case KUidMsvAttachmentEntryValue:
@@ -484,8 +494,13 @@ TInt CBtMtmUi::DisplayProgressSummary( const TDesC8& aProgress ) const
 // ---------------------------------------------------------
 //
 TInt CBtMtmUi::DisplayProgressSummaryL( const TDesC8& aProgress ) const
-	{
-	FLOG( _L( "[CBtMtmUi] CBtMtmUi:DisplayProgressSummaryL\t" ) );
+    {
+    #ifndef NO101APPDEPFIXES_NEW
+    (void) aProgress;
+    #endif //NO101APPDEPFIXES_NEW
+
+    #ifdef NO101APPDEPFIXES_NEW
+    FLOG( _L( "[CBtMtmUi] CBtMtmUi:DisplayProgressSummaryL\t" ) );
     TInt resourceId;
     if( ( !aProgress.Length() ) || ( aProgress.Size() == sizeof( TMsvLocalOperationProgress ) ) )
         {
@@ -555,6 +570,7 @@ TInt CBtMtmUi::DisplayProgressSummaryL( const TDesC8& aProgress ) const
             return KErrCancel;
             }
         }
+  #endif //NO101APPDEPFIXES_NEW
 	return KErrNone;
 	}
 
@@ -571,8 +587,19 @@ TInt CBtMtmUi::GetProgress( const TDesC8& aProgress,
                            TInt& aCurrentEntrySize, 
                            TInt& aCurrentBytesTrans ) const
 	{
-    TInt resourceId;
-	FLOG( _L( "[CBtMtmUi] CBtMtmUi: GetProgress\t" ) );
+	#ifndef NO101APPDEPFIXES_NEW
+	(void) aProgress;
+	(void) aReturnString;
+	(void) aTotalEntryCount;
+	(void) aEntriesDone;
+	(void) aCurrentEntrySize;
+	(void) aCurrentBytesTrans;	
+	#endif //NO101APPDEPFIXES_NEW
+	
+   #ifdef  NO101APPDEPFIXES_NEW
+    TInt resourceId;    
+
+	FLOG( _L( "[CBtMtmUi] CBtMtmUi: GetProgress\t" ) );	
 	TPckgBuf<TObexMtmProgress> paramPack;
 	paramPack.Copy( aProgress );
 	TObexMtmProgress& progress = paramPack();
@@ -625,6 +652,7 @@ TInt CBtMtmUi::GetProgress( const TDesC8& aProgress,
             }
 		}
 	FLOG( _L( "[CBtMtmUi] CBtMtmUi: GetProgress Done\t" ) );
+	#endif //NO101APPDEPFIXES_NEW
 	return KErrNone;
 	}
 

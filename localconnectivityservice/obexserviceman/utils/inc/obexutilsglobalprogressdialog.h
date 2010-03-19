@@ -24,7 +24,7 @@
 //  INCLUDES
 #include <e32base.h>
 #include <stringresourcereader.h>
-#include <obexutils.rsg>
+#include <Obexutils.rsg>
 #include <avkon.rsg>                     // R_QGN_GRAF_WAIT_BAR_ANIM
 #include <AknGlobalNote.h>
 
