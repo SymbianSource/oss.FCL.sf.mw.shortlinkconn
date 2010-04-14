@@ -46,6 +46,9 @@
 const TInt KFileManagerUID3 = 0x101F84EB; /// File Manager application UID3
 const TInt KUiNumberOfZoomStates = 2;          // second for the mask
 const TInt KSortNumMax = 2;
+const TInt KNfcUnreadIconIndex = 10;
+const TInt KNfcReadIconIndex = 8;
+
 
 // ============================ MEMBER FUNCTIONS ===============================
 
@@ -376,6 +379,17 @@ EXPORT_C TInt TObexUtilsUiLayer::ContextIcon( const TMsvEntry& aContext, TContex
             icon = EMbmMuiuQgn_prop_mce_ir_read - EMbmMuiuQgn_prop_mce_ir_unread;
             }
         }
+    else if( aMedia == ENfc )
+        {
+        if( aContext.Unread() )
+            {
+            icon = KNfcUnreadIconIndex;
+            }
+        else
+            {
+            icon = KNfcReadIconIndex;
+            }
+        }
 
     FLOG(_L("[OBEXUTILS]\t TObexUtilsUiLayer::ContextIcon() completed"));
 
@@ -492,6 +506,14 @@ EXPORT_C void TObexUtilsUiLayer::CreateIconsL(
             KAknsIIDQgnPropMceBtRead,
             EMbmMuiuQgn_prop_mce_bt_read,
             aIconArrays);
+        CreateAndAppendBitmapL(
+            KAknsIIDQgnPropMceNfcRead,
+            0,
+            aIconArrays);
+        CreateAndAppendBitmapL(
+            KAknsIIDQgnPropMceNfcUnread,
+            0,
+            aIconArrays);        
         }
     else //Infrared
         {

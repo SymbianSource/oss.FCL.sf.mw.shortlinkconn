@@ -52,7 +52,8 @@ class CMsvOperation;
 enum TContextMedia
     {
     EBluetooth,
-    EInfrared
+    EInfrared,
+	ENfc
     };
 
 /**

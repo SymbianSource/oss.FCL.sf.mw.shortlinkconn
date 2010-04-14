@@ -85,6 +85,8 @@ EXPORT_C void CDunAtCmdHandler::ResetData()
     iModeListen = NULL;
     delete iEcomListen;
     iEcomListen = NULL;
+    delete iAtSpecialCmdHandler;
+    iAtSpecialCmdHandler = NULL;
     if ( iAtCmdExtCommon.Handle() )
         {
         iAtCmdExtCommon.SynchronousClose();
@@ -331,6 +333,8 @@ void CDunAtCmdHandler::ConstructL()
     iEcomListen = ecomListen;
     iModeListen = modeListen;
     iNvramListen = nvramListen;
+    
+    iAtSpecialCmdHandler = CDunAtSpecialCmdHandler::NewL();
     FTRACE(FPrint( _L("CDunAtCmdHandler::ConstructL() complete") ));
     }
 
@@ -860,7 +864,10 @@ TBool CDunAtCmdHandler::ExtractNextDecodedCommand( TBool aPeek )
     TInt endIndex = KErrNotFound;
     if ( extendedCmd )
         {
-        extendedEnd = CheckExtendedCommand( startIndex, endIndex );
+        if( iAtSpecialCmdHandler->IsCompleteSubCommand(iInputBuffer, startIndex, endIndex) == EFalse )
+            {
+            extendedEnd = CheckExtendedCommand( startIndex, endIndex );
+            }
         }
     else
         {
@@ -1007,7 +1014,7 @@ TBool CDunAtCmdHandler::IsDelimiterCharacter( TChar aCharacter )
     FTRACE(FPrint( _L("CDunAtCmdHandler::IsDelimiterCharacter()") ));
     if ( aCharacter.IsSpace() || aCharacter==';' || aCharacter==0x00 )
         {
-        FTRACE(FPrint( _L("CDunAtCmdHandler::IsExtendedCharacter() complete") ));
+        FTRACE(FPrint( _L("CDunAtCmdHandler::IsDelimiterCharacter() complete") ));
         return ETrue;
         }
     FTRACE(FPrint( _L("CDunAtCmdHandler::IsDelimiterCharacter() (not delimiter) complete") ));
@@ -1070,6 +1077,16 @@ TBool CDunAtCmdHandler::CheckExtendedCommand( TInt aStartIndex, TInt& aEndIndex 
             {
             endFound = ETrue;
             break;
+            }
+        if( IsExtendedCharacter(character) && (aEndIndex != aStartIndex) && iDecodeInfo.iPrevExists )
+            {
+            if( iDecodeInfo.iPrevChar.IsAlphaDigit() )
+                {
+                aEndIndex--;
+                // End found but return EFalse in order to calling function can proceed correct way,
+                // no extended end.
+                return EFalse;
+                }
             }
         iDecodeInfo.iPrevExists = ETrue;
         iDecodeInfo.iPrevChar = character;

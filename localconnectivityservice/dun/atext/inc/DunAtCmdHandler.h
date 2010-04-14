@@ -26,6 +26,7 @@
 #include "DunAtEcomListen.h"
 #include "DunAtModeListen.h"
 #include "DunAtNvramListen.h"
+#include "DunAtSpecialCmdHandler.h"
 
 const TInt KDunChSetMaxCharLen = 1;          // Only ASCII supported for now
 const TInt KDunOkBufLength     = 1+1+2+1+1;  // <CR>+<LF>+"OK"+<CR>+<LF>
@@ -839,6 +840,10 @@ private:  // data
      */
     RATExtCommon iAtCmdExtCommon;
 
+    /**
+     * Special AT command handler for handling commands like AT&FE0Q0V1&C1&D2+IFC=3,1.
+     */
+    CDunAtSpecialCmdHandler* iAtSpecialCmdHandler;
     };
 
 #endif  // C_CDUNATCMDHANDLER_H
