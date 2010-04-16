@@ -20,7 +20,7 @@
 #include <AiwGenericParam.h>
 
 #include "BTSSSendListHandler.h"
-#include "btserviceparameterlist.h"
+#include "BTServiceParameterList.h"
 #include "BTSendingServiceDebug.h"
 
 

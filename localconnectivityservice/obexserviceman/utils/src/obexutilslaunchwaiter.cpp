@@ -86,90 +86,101 @@ void CObexUtilsLaunchWaiter::ConstructL( CMsvEntry* aMessage )
     
     CMsvAttachment* attachInfo = store->AttachmentManagerL().GetAttachmentInfoL(0);
     CleanupStack::PushL(attachInfo); // 3rd push
-    
+          
     TDataType dataType = attachInfo->MimeType();
-  
+    TFileName filePath;
+    filePath = attachInfo->FilePath();
+    
     TInt error = KErrNone;
-    TBool isCompleteSelf = EFalse;  
-    
-    RFile attachFile;        
-    TRAP( error, attachFile = store->AttachmentManagerL().GetAttachmentFileL(0));
-    TFileName fullName;
-    attachFile.FullName(fullName);
-    attachFile.Close();
-    
-    if ( KErrNone == error )
+    TBool isCompleteSelf = EFalse;      
+    CEikonEnv* eikEnv = CEikonEnv::Static();
+
+    if ( attachInfo->Type() == CMsvAttachment::EMsvFile )
         {
-        CleanupClosePushL(attachFile);  // 4th push
-        CAiwGenericParamList* paramList = CAiwGenericParamList::NewLC();  // 5th push
+        RFile attachFile;        
+        TRAP( error, attachFile = store->AttachmentManagerL().GetAttachmentFileL(0));
+        if ( error == KErrNone )
+            {
+            CleanupClosePushL(attachFile);  // 4th push          
+            CAiwGenericParamList* paramList = CAiwGenericParamList::NewLC();  // 5th push
+            TAiwGenericParam paramSave(EGenericParamAllowSave, ETrue);
+            paramList->AppendL( paramSave );          
+            
+            if ( eikEnv )
+                {               
+                iDocumentHandler = CDocumentHandler::NewL( eikEnv->Process() );
+                iDocumentHandler->SetExitObserver( this );
+                TRAP( error, iDocumentHandler->OpenFileEmbeddedL(attachFile, dataType, *paramList));               
+                }// eikEnv        
+            CleanupStack::PopAndDestroy(2); // paramList, attachFile
+            }
+        }// EMsvFile
+    
+    if ( attachInfo->Type() == CMsvAttachment::EMsvLinkedFile )
+        {
+        CAiwGenericParamList* paramList = CAiwGenericParamList::NewLC();  // 4th push
         TAiwGenericParam paramSave(EGenericParamFileSaved, ETrue);
         paramList->AppendL( paramSave );
-
-        if ( CEikonEnv::Static() )
+        
+        if ( eikEnv )
             {
-            // Launches an application in embedded mode
-            iDocumentHandler = CDocumentHandler::NewL( CEikonEnv::Static()->Process() );
+            
+            iDocumentHandler = CDocumentHandler::NewL( eikEnv->Process() );
             iDocumentHandler->SetExitObserver( this );
             RFile64 shareableFile;
-            TRAP( error, iDocumentHandler->OpenTempFileL(fullName,shareableFile));
+            TRAP( error, iDocumentHandler->OpenTempFileL(filePath,shareableFile));
             if ( error == KErrNone)
                 {
-                TRAP( error, iDocumentHandler->OpenFileEmbeddedL( shareableFile, dataType, *paramList ));
+                TRAP( error, iDocumentHandler->OpenFileEmbeddedL( shareableFile, dataType, *paramList));
                 }
             shareableFile.Close();
-            }
-        
-           
-        if ( error == KErrNotSupported )  
-            // If file is not supported, we open the file manager at file location.
-            {
-            // Launchs file manager at default folder
-            delete iDocumentHandler;
-            iDocumentHandler = NULL;
-               
-            TInt sortMethod = 2;  // 0 = 'By name', 1 = 'By type', 
-                                  // 2 = 'Most recent first' and 3 = 'Largest first'
-           TRAP (error, TObexUtilsUiLayer::LaunchFileManagerL( fullName, 
-                                                               sortMethod, 
-                                                               ETrue )); // ETrue -> launch file manager in embedded mode.
-            isCompleteSelf = ETrue;
-            }  // KErrNotSupported
-        
-        // Set message to READ
-        //
-        TMsvEntry entry = aMessage->Entry();
-        entry.SetUnread( EFalse );
-        aMessage->ChangeL( entry );
-        CleanupStack::PopAndDestroy(2); // paramList, attachFile
-        
-        }   // KErrNone
-    
-    else // Error != KErrNone, broken link found. 
-         // Lets fix it by selecting the right file.
-        {
-        error = KErrNone;
-        TFileName fileName;
-        TFileName oldFileName = attachInfo->FilePath();
-        // select file
-        //
-        if (LocateFileL(fileName, oldFileName))
-            {
-            // Update the entry
-            TRAP(error, TObexUtilsMessageHandler::UpdateEntryAttachmentL(fileName,aMessage));
-            if ( error == KErrNone )
+            if ( error == KErrNotFound )
                 {
-                // Show a confirmation note
-                CAknGlobalNote* note = CAknGlobalNote::NewLC();
-                HBufC* stringholder  = StringLoader::LoadLC( R_BT_SAVED_LINK_UPDATED );
-                note->ShowNoteL(EAknGlobalConfirmationNote, *stringholder);
-                CleanupStack::PopAndDestroy(2); //note and stringholder
-                }            
-            }           
-        isCompleteSelf = ETrue;
-        }  // !KErrNone
-
+                error = KErrNone;
+                TFileName fileName;
+                if (LocateFileL(fileName, filePath))
+                    {
+                    // Update the entry
+                    TRAP(error, TObexUtilsMessageHandler::UpdateEntryAttachmentL(fileName,aMessage));
+                    if ( error == KErrNone )
+                        {
+                        // Show a confirmation note
+                        CAknGlobalNote* note = CAknGlobalNote::NewLC();
+                        HBufC* stringholder  = StringLoader::LoadLC( R_BT_SAVED_LINK_UPDATED );
+                        note->ShowNoteL(EAknGlobalConfirmationNote, *stringholder);
+                        CleanupStack::PopAndDestroy(2); //note and stringholder
+                        }            
+                    }    
+                isCompleteSelf = ETrue;
+                } // KErrNotFound
+            } // eikEnv
+                   
+       		else if ( error == KErrNotSupported )  
+            	{                    
+            	delete iDocumentHandler;
+            	iDocumentHandler = NULL;
+                                   
+            	const TInt sortMethod = 2;  // 0 = 'By name', 1 = 'By type', 
+                                  			// 2 = 'Most recent first' and 3 = 'Largest first'
+            	TRAP (error, TObexUtilsUiLayer::LaunchFileManagerL( filePath, 
+                                                                sortMethod, 
+                                                                ETrue )); // ETrue -> launch file manager in embedded mode.
+            	isCompleteSelf = ETrue;
+            	}  // KErrNotSupported
+                
+        CleanupStack::PopAndDestroy(); // paramList                                     
+        } // EMsvLinkedFile
+    
+    
+    // Set message to READ     
+    TMsvEntry entry = aMessage->Entry();
+    entry.SetUnread( EFalse );
+    aMessage->ChangeL( entry );
+    
     User::LeaveIfError ( error );
     CleanupStack::PopAndDestroy(3); //  attachInfo, store, attachEntry
+    
+    
     
     iObserverRequestStatus = KRequestPending;  // CMsvOperation (observer)
     iStatus = KRequestPending;  // CMsvOperation
@@ -180,6 +191,7 @@ void CObexUtilsLaunchWaiter::ConstructL( CMsvEntry* aMessage )
         HandleServerAppExit( error );
         }
     }
+
 // -----------------------------------------------------------------------------
 // Destructor
 // -----------------------------------------------------------------------------

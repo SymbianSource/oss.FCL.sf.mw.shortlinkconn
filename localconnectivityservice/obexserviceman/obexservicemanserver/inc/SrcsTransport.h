@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2002-2007 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2002-2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -89,7 +89,17 @@ public:
 	*		  false: OBEX service is inactive.
 	*/
 	virtual TBool IsOBEXActive() = 0;
-	
+    
+	/** 
+    * Perform any outstanding initialization tasks.
+    * 
+    * The transport may decide to implement two-phase initialization to improve performance where needed.
+    * For instance, USB Transport has to register all service controller's interfaces and complete the message from obex class controller
+    * as soon as possible to satisfy timing requirements and defer service controller plugin creation to later stage.
+    *
+    * @return none.
+    */
+    virtual void PostInitializeL();
 	
 
 protected:

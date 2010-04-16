@@ -24,10 +24,7 @@ DEFAULT
 #include "../obexsendservices/group/bld.inf"
 #include "../obexreceiveservices/group/bld.inf"
 #include "../dun/group/bld.inf"
-#include "../lccustomplugin/group/bld.inf"
 #include "../lcstylustap/group/bld.inf"
-#include "../legacymodemplugin/group/bld.inf"
-#include "../modematplugin/group/bld.inf"
 #include "../generichid/group/bld.inf"
 #include "../headset/group/bld.inf"
 
