@@ -23,16 +23,20 @@
 #include "etelmm.h"
 #include <BTSapDomainPSKeys.h>
 #include <app/smut.h> // KUidMsgTypeSMS
+#ifdef NO101APPDEPFIXES_NEW
 #include <app/smuthdr.h>
+#endif //NO101APPDEPFIXES_NEW
+
 #include <gsmupdu.h>
 #include <txtrich.h>
 #include <msvuids.h>
 
 #include <app/csmsaccount.h>
 
+#ifdef NO101APPDEPFIXES_NEW
 // SMUT Unbranch
 #include <app/csmsgetdetdescinterface.h>
-
+#endif //NO101APPDEPFIXES_NEW
 
 // ================= MEMBER FUNCTIONS =======================
 TBool CSapVMessageParser::HandleMessageL(CObexBufObject*  aReceivedObject, const TUid aMtmID,
@@ -429,8 +433,12 @@ void CSapVMessageParser::SaveSapMmsL(CMsvSession* /*aMsvSession*/) const
 //
 void CSapVMessageParser::SaveSmsToInboxL(CMsvSession* aMsvSession, CRichText* aMessage)
 {
-    FLOG( _L( " CSapVMessageParser: SaveSmsToInboxL\t" ) );
-
+    #ifndef NO101APPDEPFIXES_NEW
+    (void) aMsvSession; 
+    (void) aMessage; 
+    #endif //NO101APPDEPFIXES_NEW
+    #ifdef NO101APPDEPFIXES_NEW
+    FLOG( _L( " CSapVMessageParser: SaveSmsToInboxL\t" ) ); 
     CSmsHeader* header=CSmsHeader::NewL(CSmsPDU::ESmsDeliver, *aMessage );
     CleanupStack::PushL(header); // 1st push
     header->SetFromAddressL(Address());
@@ -505,6 +513,7 @@ void CSapVMessageParser::SaveSmsToInboxL(CMsvSession* aMsvSession, CRichText* aM
     CleanupStack::PopAndDestroy(header);
 
     FLOG( _L( " CSapVMessageParser: SaveSmsToInboxL: Done\t" ) );
+    #endif  //NO101APPDEPFIXES_NEW
 }
 
 // ---------------------------------------------------------
@@ -514,6 +523,12 @@ void CSapVMessageParser::SaveSmsToInboxL(CMsvSession* aMsvSession, CRichText* aM
 //
 void CSapVMessageParser::SaveSmsToSentL(CMsvSession* aMsvSession, CRichText* aMessage)
 {
+    #ifndef NO101APPDEPFIXES_NEW
+    (void) aMsvSession; 
+    (void) aMessage; 
+    #endif //NO101APPDEPFIXES_NEW
+    
+    #ifdef NO101APPDEPFIXES_NEW
     FLOG( _L( " CSapVMessageParser: SaveSmsToSentL\t" ) );
 
     CSmsHeader* header = CSmsHeader::NewL( CSmsPDU::ESmsSubmit, *aMessage );
@@ -607,6 +622,7 @@ void CSapVMessageParser::SaveSmsToSentL(CMsvSession* aMsvSession, CRichText* aMe
     CleanupStack::PopAndDestroy(header);
 
     FLOG( _L( " CSapVMessageParser: SaveSmsToSentL: Done\t" ) );
+    #endif  //NO101APPDEPFIXES_NEW
 }
 
 //  End of File

@@ -22,7 +22,10 @@
 #include "irmtmui.h"
 #include "debug.h"
 
+#ifdef NO101APPDEPFIXES_NEW
 #include <app/ircmtm.h>
+#endif //NO101APPDEPFIXES_NEW
+
 #include <mtmuidef.hrh>
 #include <mtclreg.h>
 #include <obexutilsuilayer.h>
@@ -443,6 +446,11 @@ TInt CIrMtmUi::DisplayProgressSummary( const TDesC8& aProgress ) const
 //
 TInt CIrMtmUi::DisplayProgressSummaryL( const TDesC8& aProgress ) const
     {
+    #ifndef NO101APPDEPFIXES_NEW
+    (void) aProgress;
+    #endif //NO101APPDEPFIXES_NEW
+    
+    #ifdef NO101APPDEPFIXES_NEW
     FLOG( _L( "[IRU] CIrMtmUi: DisplayProgressSummaryL\t" ) );
     TInt resourceId;
     if( ( !aProgress.Length() ) || 
@@ -511,6 +519,7 @@ TInt CIrMtmUi::DisplayProgressSummaryL( const TDesC8& aProgress ) const
             }
         }
     FLOG( _L( "[IRU] CIrMtmUi: DisplayProgressSummaryL Done\t" ) );
+    #endif //NO101APPDEPFIXES_NEW
     return KErrNone;
     }
 
@@ -526,6 +535,16 @@ TInt CIrMtmUi::GetProgress( const TDesC8& aProgress,
                            TInt& aCurrentEntrySize, 
                            TInt& aCurrentBytesTrans ) const
     {
+    #ifndef NO101APPDEPFIXES_NEW
+    (void) aProgress;
+    (void) aReturnString;
+    (void) aTotalEntryCount;
+    (void) aEntriesDone;
+    (void) aCurrentEntrySize;
+    (void) aCurrentBytesTrans;	
+    #endif //NO101APPDEPFIXES_NEW
+    
+    #ifdef NO101APPDEPFIXES_NEW
     FLOG( _L( "[CIrMtmUi] CIrMtmUi: GetProgress\t" ) );
     TPckgBuf<TObexMtmProgress> paramPack;
     paramPack.Copy( aProgress );
@@ -572,6 +591,7 @@ TInt CIrMtmUi::GetProgress( const TDesC8& aProgress,
             }
         }
     FLOG( _L( "[CBtMtmUi] CBtMtmUi: GetProgress Done\t" ) );
+    #endif //NO101APPDEPFIXES_NEW
     return KErrNone;
     }
 

@@ -25,7 +25,11 @@
 #ifdef NO101APPDEPFIXES
 #include <MuiuMsvProgressReporterOperation.h>
 #endif  //NO101APPDEPFIXES
+
+#ifdef NO101APPDEPFIXES_NEW 
 #include <app/btcmtm.h>
+#endif //NO101APPDEPFIXES_NEW
+
 #include <mtmuidef.hrh>
 #include <mtclreg.h>
 #include <obexutilsuilayer.h>
@@ -490,8 +494,13 @@ TInt CBtMtmUi::DisplayProgressSummary( const TDesC8& aProgress ) const
 // ---------------------------------------------------------
 //
 TInt CBtMtmUi::DisplayProgressSummaryL( const TDesC8& aProgress ) const
-	{
-	FLOG( _L( "[CBtMtmUi] CBtMtmUi:DisplayProgressSummaryL\t" ) );
+    {
+    #ifndef NO101APPDEPFIXES_NEW
+    (void) aProgress;
+    #endif //NO101APPDEPFIXES_NEW
+
+    #ifdef NO101APPDEPFIXES_NEW
+    FLOG( _L( "[CBtMtmUi] CBtMtmUi:DisplayProgressSummaryL\t" ) );
     TInt resourceId;
     if( ( !aProgress.Length() ) || ( aProgress.Size() == sizeof( TMsvLocalOperationProgress ) ) )
         {
@@ -561,6 +570,7 @@ TInt CBtMtmUi::DisplayProgressSummaryL( const TDesC8& aProgress ) const
             return KErrCancel;
             }
         }
+  #endif //NO101APPDEPFIXES_NEW
 	return KErrNone;
 	}
 
@@ -577,8 +587,19 @@ TInt CBtMtmUi::GetProgress( const TDesC8& aProgress,
                            TInt& aCurrentEntrySize, 
                            TInt& aCurrentBytesTrans ) const
 	{
-    TInt resourceId;
-	FLOG( _L( "[CBtMtmUi] CBtMtmUi: GetProgress\t" ) );
+	#ifndef NO101APPDEPFIXES_NEW
+	(void) aProgress;
+	(void) aReturnString;
+	(void) aTotalEntryCount;
+	(void) aEntriesDone;
+	(void) aCurrentEntrySize;
+	(void) aCurrentBytesTrans;	
+	#endif //NO101APPDEPFIXES_NEW
+	
+   #ifdef  NO101APPDEPFIXES_NEW
+    TInt resourceId;    
+
+	FLOG( _L( "[CBtMtmUi] CBtMtmUi: GetProgress\t" ) );	
 	TPckgBuf<TObexMtmProgress> paramPack;
 	paramPack.Copy( aProgress );
 	TObexMtmProgress& progress = paramPack();
@@ -631,6 +652,7 @@ TInt CBtMtmUi::GetProgress( const TDesC8& aProgress,
             }
 		}
 	FLOG( _L( "[CBtMtmUi] CBtMtmUi: GetProgress Done\t" ) );
+	#endif //NO101APPDEPFIXES_NEW
 	return KErrNone;
 	}
 
