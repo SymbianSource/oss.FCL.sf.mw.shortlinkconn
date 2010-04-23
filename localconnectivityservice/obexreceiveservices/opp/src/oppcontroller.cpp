@@ -37,7 +37,7 @@
 
 // CONSTANTS
 
-const TInt    KBufferSize = 0x4000;  // 16kB
+const TInt    KBufferSize = 0x10000;  // 64 kB
 
 // ================= MEMBER FUNCTIONS =======================
 

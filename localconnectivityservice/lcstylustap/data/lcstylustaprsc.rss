@@ -33,6 +33,6 @@ RESOURCE RSS_SIGNATURE
     {
     }
 RESOURCE TBUF       r_lcstylustap_bt_name  { buf = qtn_bt_title_bluetooth; }
-RESOURCE TBUF       r_lcstylustap_usb_name  { buf = qtn_usb_title; }
+RESOURCE TBUF       r_lcstylustap_usb_name  { buf = qtn_usb_stylus_tap; }
 RESOURCE TBUF       r_lcstylustap_usb_mem_eject  { buf = qtn_usb_mem_eject; }
 

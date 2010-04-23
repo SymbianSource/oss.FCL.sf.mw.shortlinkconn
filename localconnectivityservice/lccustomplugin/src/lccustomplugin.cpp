@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2009 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -14,7 +14,6 @@
 * Description:  Main handler for incoming requests
 *
 */
-
 
 #include "lccustomplugin.h"
 #include "lclistallcmd.h"
@@ -53,6 +52,8 @@ CLcCustomPlugin::~CLcCustomPlugin()
 CLcCustomPlugin::CLcCustomPlugin() : CATExtPluginBase()
     {
     iHandler = NULL;
+    iHcCmd = NULL;
+    iHcReply = NULL;
     }
 
 // ---------------------------------------------------------------------------
@@ -83,6 +84,8 @@ void CLcCustomPlugin::ReportConnectionName( const TDesC8& /*aName*/ )
 TBool CLcCustomPlugin::IsCommandSupported( const TDesC8& aCmd )
     {
     TRACE_FUNC_ENTRY
+    iHcCmd = NULL;
+    iHcReply = NULL;
     TInt i;
     TInt count = iHandlers.Count();
     for ( i=0; i<count; i++ )
@@ -114,6 +117,8 @@ void CLcCustomPlugin::HandleCommand( const TDesC8& aCmd,
 	TRACE_FUNC_ENTRY
 	if ( iHandler )
 	    {
+	    iHcCmd = &aCmd;
+	    iHcReply = &aReply;
 	    iHandler->HandleCommand( aCmd, aReply, aReplyNeeded );
 	    }
 	TRACE_FUNC_EXIT
@@ -201,13 +206,13 @@ void CLcCustomPlugin::ReportNvramStatusChange( const TDesC8& /*aNvram*/ )
 // Reports about external handle command error condition.
 // This is for cases when for example DUN decided the reply contained an
 // error condition but the plugin is still handling the command internally.
-// Example: in command line "AT+TEST;ATDT1234" was given. "AT+TEST" returns
-// "OK" and "ATDT" returns "CONNECT". Because "OK" and "CONNECT" are
-// different reply types the condition is "ERROR" and DUN ends processing.
-// This solution keeps the pointer to the last AT command handling plugin
-// inside ATEXT and calls this function there to report the error.
-// It is to be noted that HandleCommandCancel() is not sufficient to stop
-// the processing as the command handling has already finished.
+// Example: "AT+TEST;+TEST2" was given in command line; "AT+TEST" returns
+// non-EReplyTypeError condition and "AT+TEST2" returns EReplyTypeError.
+// As the plugin(s) returning the non-EReplyTypeError may still have some
+// ongoing operation then these plugins are notified about the external
+// EReplyTypeError in command line processing. It is to be noted that
+// HandleCommandCancel() is not sufficient to stop the processing as the
+// command handling has already finished.
 // ---------------------------------------------------------------------------
 //
 void CLcCustomPlugin::ReportExternalHandleCommandError()
@@ -252,23 +257,28 @@ TInt CLcCustomPlugin::CreatePartOfReply( RBuf8& aDstBuffer )
 // ---------------------------------------------------------------------------
 //
 TInt CLcCustomPlugin::CreateReplyAndComplete( TATExtensionReplyType aReplyType,
-                                              RBuf8& aDstBuffer,
                                               const TDesC8& aSrcBuffer,
-                                              TInt aError )
+											  TInt aError )
     {
     TRACE_FUNC_ENTRY
     iReplyBuffer.Close();
     if ( aError != KErrNone )
         {
         HandleCommandCompleted( aError, EReplyTypeUndefined );
+        iHcCmd = NULL;
+        iHcReply = NULL;
         TRACE_FUNC_EXIT
         return KErrNone;
         }
-    TInt retVal = KErrNone;
+    if ( !iHcReply )
+        {
+        TRACE_FUNC_EXIT
+        return KErrGeneral;
+        }
     switch ( aReplyType )
         {
         case EReplyTypeOther:
-            if ( iQuietMode || !iVerboseMode )
+            if ( iQuietMode )
                 {
                 iReplyBuffer.Create( KNullDesC8 );
                 }
@@ -276,25 +286,23 @@ TInt CLcCustomPlugin::CreateReplyAndComplete( TATExtensionReplyType aReplyType,
                 {
                 iReplyBuffer.Create( aSrcBuffer );
                 }
-            CreatePartOfReply( aDstBuffer );
-            HandleCommandCompleted( KErrNone, aReplyType );
             break;
         case EReplyTypeOk:
             CreateOkOrErrorReply( iReplyBuffer, ETrue );
-            CreatePartOfReply( aDstBuffer );
-            HandleCommandCompleted( KErrNone, aReplyType );
             break;
         case EReplyTypeError:
             CreateOkOrErrorReply( iReplyBuffer, EFalse );
-            CreatePartOfReply( aDstBuffer );
-            HandleCommandCompleted( KErrNone, aReplyType );
             break;
         default:
-            retVal = KErrGeneral;
-            break;
+            TRACE_FUNC_EXIT
+            return KErrGeneral;
         }
+    CreatePartOfReply( *iHcReply );
+    HandleCommandCompleted( KErrNone, aReplyType );
+    iHcCmd = NULL;
+    iHcReply = NULL;
     TRACE_FUNC_EXIT
-    return retVal;
+    return KErrNone;
     }
 
 // ---------------------------------------------------------------------------
@@ -345,6 +353,58 @@ TInt CLcCustomPlugin::CreateOkOrErrorReply( RBuf8& aReplyBuffer,
     TInt retVal = aReplyBuffer.Create( replyBuffer );
     TRACE_FUNC_EXIT
     return retVal;
+    }
+
+// ---------------------------------------------------------------------------
+// From MLcCustomPlugin.
+// Checks if the command is a base, set, read or test type of command
+// ---------------------------------------------------------------------------
+//
+TCmdHandlerType CLcCustomPlugin::CheckCommandType(
+    const TDesC8& aCmdBase,
+    const TDesC8& aCmdFull )
+    {
+    TRACE_FUNC_ENTRY
+    TInt retTemp = KErrNone;
+    TBuf8<KDefaultCmdBufLength> atCmdBuffer;
+    atCmdBuffer.Copy( aCmdBase );
+    // Check "base" command ("AT+COMMAND")
+    retTemp = aCmdFull.Compare( atCmdBuffer );
+    if ( retTemp == 0 )
+        {
+        TRACE_FUNC_EXIT
+        return ECmdHandlerTypeBase;
+        }
+    // Check "read" command ("AT+COMMAND?")
+    // Add last question mark
+    atCmdBuffer.Append( '?' );
+    retTemp = aCmdFull.Compare( atCmdBuffer );
+    if ( retTemp == 0 )
+        {
+        TRACE_FUNC_EXIT
+        return ECmdHandlerTypeRead;
+        }
+    // Check "test" command ("AT+COMMAND=?")
+    // Add "=" before the question mark
+    _LIT8( KAssignmentMark, "=" );
+    atCmdBuffer.Insert( atCmdBuffer.Length()-1, KAssignmentMark );
+    retTemp = aCmdFull.Compare( atCmdBuffer );
+    if ( retTemp == 0 )
+        {
+        TRACE_FUNC_EXIT
+        return ECmdHandlerTypeTest;
+        }
+    // Check "set" command ("AT+COMMAND=")
+    // Remove last question mark
+    atCmdBuffer.SetLength( atCmdBuffer.Length() - 1 );
+    retTemp = aCmdFull.Compare( atCmdBuffer );
+    if ( retTemp == 0 )
+        {
+        TRACE_FUNC_EXIT
+        return ECmdHandlerTypeSet;
+        }
+    TRACE_FUNC_EXIT
+    return ECmdHandlerTypeUndefined;
     }
 
 // ---------------------------------------------------------------------------

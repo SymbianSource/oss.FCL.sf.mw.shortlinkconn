@@ -201,7 +201,9 @@ EXPORT_C void CObexUtilsDialog::CancelProgressDialogL()
 
     if( iProgressDialog )
         {        
+        iProgressDialog->SetCallback(NULL);
         iProgressDialog->ProcessFinishedL();
+        iProgressDialog = NULL;
 
         if ( iObexDialogTimer )
             {
