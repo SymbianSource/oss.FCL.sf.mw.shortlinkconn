@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2002 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2002,2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -137,40 +137,51 @@ void TObexUtilsMessageHandler::StoreAsRichTextL(
     {
     FLOG(_L("[OBEXUTILS]\t StoreAsRichTextL()"));
 
-    // Read the file into buffer
-    
-    CBufFlat* buffer = CBufFlat::NewL( 16 );
-    CleanupStack::PushL(buffer);  // 1st push
-
     TInt fileLength = 0;
     User::LeaveIfError( aFile.Size( fileLength ) );
-    
-    buffer->ResizeL( fileLength );
-    TPtr8 bufferPtr = buffer->Ptr(0);
-    
-    User::LeaveIfError( aFile.Read( bufferPtr ) );
-    
-    // In order for Bio to understand 8-bit binary data, 
-    // it needs to be stored in wide rich text object
-    // in the low byte of each word with the upper byte as 0.
-    // Do not use UTF8, just convert 8-bit to 16-bit.
 
-    CRichText* richText = ConstructRichTextLC(); // 2nd, 3rd, 4th push
-    HBufC* convert8BitTo16Bit = HBufC::NewLC(fileLength);  // 5th push
-    convert8BitTo16Bit->Des().Copy( bufferPtr );
-    buffer->Reset();  // free unused memory before InsertL()
+    // Calculate the number of blocks to read
+    const TInt blockSize = 128 * 1024;
+    TInt fullBlockCnt = fileLength / blockSize;
+    if (fileLength % blockSize > 0)
+        {
+        fullBlockCnt++;
+        }
+
+    CRichText* richText = ConstructRichTextLC(); // 1st, 2nd, 3rd push
+
+    RBuf8 buffer8;
+    CleanupClosePushL(buffer8);  // 4th push
+    buffer8.CreateL( blockSize );
+    RBuf buffer16;
+    CleanupClosePushL(buffer16); // 5th push
+    buffer16.CreateL(blockSize);
     
-    richText->InsertL(0, *convert8BitTo16Bit);
-    CleanupStack::PopAndDestroy(convert8BitTo16Bit);
-    // -1 pop: free unused memory before StoreBodyTextL()
+    // Read the file into buffer in small chunks  
+    TInt readBytes = 0;
+    for (TInt i = 0; i < fullBlockCnt; ++i)
+        {
+        User::LeaveIfError( aFile.Read( buffer8 ) );
+    
+        // In order for Bio to understand 8-bit binary data, 
+        // it needs to be stored in wide rich text object
+        // in the low byte of each word with the upper byte as 0.
+        // Do not use UTF8, just convert 8-bit to 16-bit.  
+        buffer16.Copy( buffer8 );
+        
+        richText->InsertL(readBytes, buffer16);
+        readBytes += buffer8.Length();
+        }
+    CleanupStack::PopAndDestroy(2, &buffer8);
+    // -2 pop: free unused memory before StoreBodyTextL()
 
     CMsvStore* parentStore = aParentEntry->EditStoreL();
-    CleanupStack::PushL(parentStore);   // 5th push
+    CleanupStack::PushL(parentStore);   // 4th push
     parentStore->StoreBodyTextL(*richText);
     parentStore->CommitL();
 
-    CleanupStack::PopAndDestroy(5);  // parentStore, richText, richParaFormatLayer,
-                                     // richCharFormatLayer, buffer
+    CleanupStack::PopAndDestroy(4);  // parentStore, richText, richParaFormatLayer,
+                                     // richCharFormatLayer
 
     FLOG(_L("[OBEXUTILS]\t StoreAsRichTextL() completed"));
     }
@@ -327,10 +338,10 @@ void TObexUtilsMessageHandler::RecogniseObjectsL(
     TPtrC mimeType16(buf16->Des());
     CleanupStack::PopAndDestroy();   //   buf16
     
-    CUpdateMusicCollection* updateMusiccollection =CUpdateMusicCollection::NewL() ;
-    if (updateMusiccollection->isSupported(mimeType16))
+    CUpdateMusicCollection* updateMusicCollection = CUpdateMusicCollection::NewL() ;
+    if (updateMusicCollection->isSupported(mimeType16))
         {
-        updateMusiccollection->addToCollectionL(aFileName);
+        updateMusicCollection->addToCollectionL(aFileName);
         }
     
     aAttachInfo->SetMimeTypeL( mimeType );

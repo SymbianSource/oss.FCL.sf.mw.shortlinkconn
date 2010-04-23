@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2008-2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -65,8 +65,6 @@ void CDunSignalCopy::ResetData()
     Stop();
     // AddCallback()
     iCallbacks.Close();
-    // AddWriteReadyCallback()
-    iERCallbacks.Close();
     // Internal
     Initialize();
     FTRACE(FPrint( _L("CDunSignalCopy::ResetData() complete") ));
@@ -98,35 +96,6 @@ TInt CDunSignalCopy::AddCallback( MDunConnMon* aCallback )
         return retTemp;
         }
     FTRACE(FPrint( _L("CDunSignalCopy::AddCallback() complete" ) ));
-    return KErrNone;
-    }
-
-// ---------------------------------------------------------------------------
-// Adds callback for endpoint readiness
-// The callback will be called when the endpoint is ready or not ready
-// ---------------------------------------------------------------------------
-//
-TInt CDunSignalCopy::AddEndpointReadyCallback( MDunEndpointReady* aERCallback )
-    {
-    FTRACE(FPrint( _L("CDunSignalCopy::AddEndpointReadyCallback()" ) ));
-    if ( !aERCallback )
-        {
-        FTRACE(FPrint( _L("CDunSignalCopy::AddEndpointReadyCallback() (aERCallback) not initialized!" ) ));
-        return KErrGeneral;
-        }
-    TInt retTemp = iERCallbacks.Find( aERCallback );
-    if ( retTemp != KErrNotFound )
-        {
-        FTRACE(FPrint( _L("CDunSignalCopy::AddEndpointReadyCallback() (already exists) complete" ) ));
-        return KErrAlreadyExists;
-        }
-    retTemp = iERCallbacks.Append( aERCallback );
-    if ( retTemp != KErrNone )
-        {
-        FTRACE(FPrint( _L("CDunSignalCopy::AddEndpointReadyCallback() (append failed!) complete" ) ));
-        return retTemp;
-        }
-    FTRACE(FPrint( _L("CDunSignalCopy::AddEndpointReadyCallback() complete" ) ));
     return KErrNone;
     }
 
@@ -336,13 +305,11 @@ void CDunSignalCopy::ManageSignalChangeUpstream()
         FTRACE(FPrint( _L("CDunSignalCopy::ManageSignalChangeUpstream() checking RTS..." ) ));
         if ( iSignals & KSignalRTS )  // RTS changed to high
             {
-            ReportEndpointReady( ETrue );
             ChangeUpstreamSignal( KSignalRTS, 0 );
             FTRACE(FPrint( _L("CDunSignalCopy::ManageSignalChangeUpstream() RTS changed high" ) ));
             }
         else  // RTS changed to low
             {
-            ReportEndpointReady( EFalse );
             ChangeUpstreamSignal( 0, KSignalRTS );
             FTRACE(FPrint( _L("CDunSignalCopy::ManageSignalChangeUpstream() RTS changed low" ) ));
             }
@@ -462,28 +429,6 @@ void CDunSignalCopy::ChangeDownstreamSignal( TUint aSetMask, TUint aClearMask )
         }
     // Add other cases here if necessary
     FTRACE(FPrint( _L("CDunSignalCopy::ChangeDownstreamSignal() complete" ) ));
-    }
-
-// ---------------------------------------------------------------------------
-// Reports endpoint ready or not ready
-// ---------------------------------------------------------------------------
-//
-void CDunSignalCopy::ReportEndpointReady( TBool aReady )
-    {
-    FTRACE(FPrint( _L("CDunSignalCopy::ReportEndpointReady()" ) ));
-    TInt count = iERCallbacks.Count();
-    for ( TInt i=0; i<count; i++ )
-        {
-        if ( aReady )
-            {
-            iERCallbacks[i]->NotifyEndpointReady();
-            }
-        else  // not ready
-            {
-            iERCallbacks[i]->NotifyEndpointNotReady();
-            }
-        }
-    FTRACE(FPrint( _L("CDunSignalCopy::ReportEndpointReady() complete" ) ));
     }
 
 // ---------------------------------------------------------------------------

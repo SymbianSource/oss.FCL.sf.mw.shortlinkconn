@@ -31,6 +31,8 @@
 #include <obexutilsmessagehandler.h>
 
 
+const TInt KBtMtmUiNfcContext       = 2;
+
 // ================= MEMBER FUNCTIONS =======================
 
 // Two-phased constructor.
@@ -129,7 +131,16 @@ TInt CBtMtmUiData::QueryCapability( TUid aCapability,
 const CBaseMtmUiData::CBitmapArray& CBtMtmUiData::ContextIcon( const TMsvEntry& aContext, 
                                                               TInt /*aStateFlags*/) const
 	{
-	TInt icon = TObexUtilsUiLayer::ContextIcon( aContext, EBluetooth );
+	// Check if NFC context
+	TInt icon = 0;
+	if ( aContext.MtmData1() == KBtMtmUiNfcContext )
+	    {
+      icon = TObexUtilsUiLayer::ContextIcon( aContext, ENfc );
+	    }
+	else
+	    {
+	    icon = TObexUtilsUiLayer::ContextIcon( aContext, EBluetooth );
+	    }
 
 	return *iIconArrays->At( icon/2 ); 
 	}

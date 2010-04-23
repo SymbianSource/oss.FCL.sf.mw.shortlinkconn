@@ -24,4 +24,4 @@ DEFAULT
 
 PRJ_EXPORTS
 
-../inc/secondarydisplay/obexutilssecondarydisplayapi.h     MW_LAYER_PLATFORM_EXPORT_PATH(secondarydisplay/obexutilssecondarydisplayapi.h)
+../inc/secondarydisplay/obexutilssecondarydisplayapi.h     MW_LAYER_PLATFORM_EXPORT_PATH(SecondaryDisplay/obexutilssecondarydisplayapi.h)

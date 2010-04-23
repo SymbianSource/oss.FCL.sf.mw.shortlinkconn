@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2008-2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -78,8 +78,7 @@ public:
  *  @lib dunutils.lib
  *  @since S60 v3.2
  */
-NONSHARABLE_CLASS( CDunDataPusher ) : public CActive,
-                                      public MDunEndpointReady
+NONSHARABLE_CLASS( CDunDataPusher ) : public CActive
     {
 
 public:
@@ -238,24 +237,6 @@ private:
      */
     void DoCancel();
 
-// from base class MDunEndpointReady
-
-    /**
-     * Gets called when endpoint is ready
-     *
-     * @since S60 5.0
-     * @return None
-     */
-    void NotifyEndpointReady();
-
-    /**
-     * Gets called when endpoint is not ready
-     *
-     * @since S60 5.0
-     * @return None
-     */
-    void NotifyEndpointNotReady();
-
 private:  // data
 
     /**
@@ -283,11 +264,6 @@ private:  // data
      * Index of current event to serve
      */
     TInt iEventIndex;
-
-    /**
-     * Flag to be set when endpoint is ready or not
-     */
-    TBool iEPReady;
 
     /**
      * RSocket object of local media side

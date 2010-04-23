@@ -28,7 +28,7 @@
 #include <avkon.mbg>
 #include <avkon.rsg>
 #include <bautils.h>
-#include <BtuiViewResources.rsg>     // Compiled resource ids
+//#include <BtuiViewResources.rsg>     // Compiled resource ids
 #include <e32math.h>
 
 #include <StringLoader.h>            // Localisation stringloader

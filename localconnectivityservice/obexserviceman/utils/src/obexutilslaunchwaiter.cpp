@@ -90,7 +90,7 @@ void CObexUtilsLaunchWaiter::ConstructL( CMsvEntry* aMessage )
     TDataType dataType = attachInfo->MimeType();
     TFileName filePath;
     filePath = attachInfo->FilePath();
-    
+  
     TInt error = KErrNone;
     TBool isCompleteSelf = EFalse;      
     CEikonEnv* eikEnv = CEikonEnv::Static();
@@ -123,18 +123,35 @@ void CObexUtilsLaunchWaiter::ConstructL( CMsvEntry* aMessage )
         paramList->AppendL( paramSave );
         
         if ( eikEnv )
-            {
-            
+            {            
             iDocumentHandler = CDocumentHandler::NewL( eikEnv->Process() );
             iDocumentHandler->SetExitObserver( this );
-            RFile64 shareableFile;
-            TRAP( error, iDocumentHandler->OpenTempFileL(filePath,shareableFile));
-            if ( error == KErrNone)
+            RFs rfs;
+            User::LeaveIfError( rfs.Connect() );
+            if ( BaflUtils::FileExists( rfs, filePath ) )                                 
                 {
-                TRAP( error, iDocumentHandler->OpenFileEmbeddedL( shareableFile, dataType, *paramList));
-                }
-            shareableFile.Close();
-            if ( error == KErrNotFound )
+                RFile64 shareableFile;
+                TRAP( error, iDocumentHandler->OpenTempFileL(filePath,shareableFile));
+                if ( error == KErrNone)
+                    {
+                    TRAP( error, iDocumentHandler->OpenFileEmbeddedL( shareableFile, dataType, *paramList));
+                    }
+                shareableFile.Close();
+                
+                if ( error == KErrNotSupported )  
+                    {                    
+                    delete iDocumentHandler;
+                    iDocumentHandler = NULL;
+                    
+                    const TInt sortMethod = 2;  // 0 = 'By name', 1 = 'By type', 
+                                                // 2 = 'Most recent first' and 3 = 'Largest first'
+                    TRAP (error, TObexUtilsUiLayer::LaunchFileManagerL( filePath, 
+                                                                        sortMethod, 
+                                                                        ETrue )); // ETrue -> launch file manager in embedded mode.
+                    isCompleteSelf = ETrue;
+                    }  // KErrNotSupported
+                }            
+            else 
                 {
                 error = KErrNone;
                 TFileName fileName;
@@ -152,25 +169,14 @@ void CObexUtilsLaunchWaiter::ConstructL( CMsvEntry* aMessage )
                         }            
                     }    
                 isCompleteSelf = ETrue;
-                } // KErrNotFound
+                }  
+           
+            rfs.Close();
             } // eikEnv
-                   
-       		else if ( error == KErrNotSupported )  
-            	{                    
-            	delete iDocumentHandler;
-            	iDocumentHandler = NULL;
-                                   
-            	const TInt sortMethod = 2;  // 0 = 'By name', 1 = 'By type', 
-                                  			// 2 = 'Most recent first' and 3 = 'Largest first'
-            	TRAP (error, TObexUtilsUiLayer::LaunchFileManagerL( filePath, 
-                                                                sortMethod, 
-                                                                ETrue )); // ETrue -> launch file manager in embedded mode.
-            	isCompleteSelf = ETrue;
-            	}  // KErrNotSupported
-                
+        
         CleanupStack::PopAndDestroy(); // paramList                                     
         } // EMsvLinkedFile
-    
+     
     
     // Set message to READ     
     TMsvEntry entry = aMessage->Entry();
@@ -178,9 +184,7 @@ void CObexUtilsLaunchWaiter::ConstructL( CMsvEntry* aMessage )
     aMessage->ChangeL( entry );
     
     User::LeaveIfError ( error );
-    CleanupStack::PopAndDestroy(3); //  attachInfo, store, attachEntry
-    
-    
+    CleanupStack::PopAndDestroy(3); //  attachInfo, store, attachEntry        
     
     iObserverRequestStatus = KRequestPending;  // CMsvOperation (observer)
     iStatus = KRequestPending;  // CMsvOperation

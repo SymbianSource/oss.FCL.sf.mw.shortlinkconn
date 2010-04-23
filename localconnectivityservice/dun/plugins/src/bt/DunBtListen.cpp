@@ -28,6 +28,9 @@
 const TInt KListenQueSize   = 1;
 const TInt KDunFixedChannel = 22;  // Hack/kludge for Apple Bug ID 6527598
 
+//Service Class Bits supported by DUN
+static const TUint16 KCoDDunServiceClass = EMajorServiceTelephony | EMajorServiceNetworking;
+
 // ======== MEMBER FUNCTIONS ========
 
 // ---------------------------------------------------------------------------
@@ -340,6 +343,11 @@ TInt CDunBtListen::ReserveLocalChannel( RSocketServ& aSocketServ,
         return KErrInUse;
         }
     aChannelNum = aListenSocket.LocalPort();
+    
+    // We try to set the Telephony and Networking bits in our service class.  If this fails we
+    // ignore it, as it's better to carry on without it than to fail to start listening.
+    (void)aListenSocket.SetOpt(KBTRegisterCodService, KSolBtRFCOMM, KCoDDunServiceClass);
+    
     retTemp = aListenSocket.Listen( KListenQueSize );
     if ( retTemp != KErrNone )
         {

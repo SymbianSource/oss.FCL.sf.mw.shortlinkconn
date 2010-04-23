@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2009 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2009-2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -312,7 +312,6 @@ void CDunDataPusher::Initialize()
     // Don't initialize iStreamCallback here (it is set through NewL)
     iPushState = EDunStateIdle;
     iEventIndex = 0;
-    iEPReady = EFalse;
     iSocket = NULL;
     iComm = NULL;
     }
@@ -336,13 +335,6 @@ TInt CDunDataPusher::ManageOneEvent()
         return KErrGeneral;
         }
     iStatus = KRequestPending;
-    if ( !iEPReady )
-        {
-        SetActive();
-        TRequestStatus* requestStatus = &iStatus;
-        User::RequestComplete( requestStatus, KErrNone );
-        return KErrNone;
-        }
     const TDesC8 *pushedData = iEventQueue[iEventIndex].iPushedData;
     if ( iComm )
         {
@@ -454,28 +446,4 @@ void CDunDataPusher::DoCancel()
         FTRACE(FPrint( _L("CDunDataPusher::DoCancel() (RSocket) cancelled" )));
         }
     FTRACE(FPrint( _L("CDunDataPusher::DoCancel() complete" )));
-    }
-
-// ---------------------------------------------------------------------------
-// From class MDunEndpointReady.
-// Gets called when endpoint is ready
-// ---------------------------------------------------------------------------
-//
-void CDunDataPusher::NotifyEndpointReady()
-    {
-    FTRACE(FPrint( _L("CDunDataPusher::NotifyEndpointReady()" )));
-    iEPReady = ETrue;
-    FTRACE(FPrint( _L("CDunDataPusher::NotifyEndpointReady() complete" )));
-    }
-
-// ---------------------------------------------------------------------------
-// From class MDunEndpointReady.
-// Gets called when endpoint is not ready
-// ---------------------------------------------------------------------------
-//
-void CDunDataPusher::NotifyEndpointNotReady()
-    {
-    FTRACE(FPrint( _L("CDunDataPusher::NotifyEndpointNotReady()" )));
-    iEPReady = EFalse;
-    FTRACE(FPrint( _L("CDunDataPusher::NotifyEndpointNotReady() complete" )));
     }
