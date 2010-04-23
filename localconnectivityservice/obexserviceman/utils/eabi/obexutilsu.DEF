@@ -59,4 +59,5 @@ EXPORTS
 	_ZN17TObexUtilsUiLayer36ShowGlobalFileOpenConfirmationQueryLERKiRK7TDesC16 @ 58 NONAME
 	_ZN24TObexUtilsMessageHandler16AddEntryToInboxLERlR4TBufILi256EEP6RArrayIlE @ 59 NONAME
 	_ZN21CGlobalProgressDialog19ShowProgressDialogLEi @ 60 NONAME
+	_ZN24TObexUtilsMessageHandler16AddEntryToInboxLERlR4TBufILi256EE @ 61 NONAME
 

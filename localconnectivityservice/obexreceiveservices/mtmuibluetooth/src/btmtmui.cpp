@@ -22,7 +22,9 @@
 #include "btmtmuidebug.h"
 
 //#include <obexmtmuilayer.h>
+#ifdef NO101APPDEPFIXES
 #include <MuiuMsvProgressReporterOperation.h>
+#endif  //NO101APPDEPFIXES
 #include <btcmtm.h>
 #include <mtmuidef.hrh>
 #include <mtclreg.h>
@@ -34,11 +36,13 @@
 
 
 // CONSTANTS
+#ifdef NO101APPDEPFIXES
 const TInt KBtMtmUiToFromFieldBuffer     = 80;
 const TInt KBtMtmUiConnectionTimeout     = 20000000;
 const TInt KBtMtmUiConnectionPutTimeout  = 0;
 const TInt KBtMtmUiObexPort              = 1;
 const TInt KBtMtmUiAddressMaxLength      = 3;
+#endif  //NO101APPDEPFIXES
 
 // ENUMS
 enum TBtMtmAsyncCmds
@@ -223,8 +227,6 @@ CMsvOperation* CBtMtmUi::EditL( TRequestStatus& aStatus, const CMsvEntrySelectio
 CMsvOperation* CBtMtmUi::EditL( TRequestStatus& aStatus )
 	{
 	FLOG( _L( "[BtMtmUi] CBtMtmUi: EditL 2 \t" ) );
-    TInt resourceId;
-    TInt retVal=0;
 	switch( iBaseMtm.Entry().Entry().iType.iUid )
 		{
 	    case KUidMsvMessageEntryValue:
@@ -235,8 +237,10 @@ CMsvOperation* CBtMtmUi::EditL( TRequestStatus& aStatus )
 			    //   Edit/"use" entries in the Inbox
 			    return LaunchEditorApplicationL( aStatus, iBaseMtm.Entry().Session() );   
 			    }
+#ifdef NO101APPDEPFIXES
 		    else
 			    {
+			    TInt resourceId;
                 HBufC* password = HBufC::NewL(1);
                 CleanupStack::PushL( password );  // 1st push
                 BaseMtm().LoadMessageL();
@@ -254,7 +258,8 @@ CMsvOperation* CBtMtmUi::EditL( TRequestStatus& aStatus )
 				
 
                 if ( iDiscovery->SearchRemoteDevice( iDevice ) == KErrNone )
-				{ 
+                    {
+                    TInt retVal=0;
 				    iWaiter.Start();
 				    
 				    if ( iState ==KErrNone)
@@ -363,6 +368,7 @@ CMsvOperation* CBtMtmUi::EditL( TRequestStatus& aStatus )
                 CleanupStack::PopAndDestroy(3);  // waiter, sel,  password
                 return reporter;
 			    }
+#endif  //NO101APPDEPFIXES
 		    }
 	    case KUidMsvServiceEntryValue:
 	    case KUidMsvAttachmentEntryValue:

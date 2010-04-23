@@ -11,13 +11,19 @@
 *
 * Contributors:
 *
-* Description:
+* Description:  This file provides the information required for building the
+*                modem at plugin
 *
 */
 
-#ifndef __MTMUIINFRAREDRESOURCES_IBY__
-#define __MTMUIINFRAREDRESOURCES_IBY__
+#include <platform_paths.hrh>
 
-data=DATAZ_\resource\messaging\mtm\irmtmui.rsc             resource\messaging\mtm\irmtmui.rsc
+PRJ_PLATFORMS
 
-#endif
+PRJ_EXPORTS
+../rom/modematplugin.iby         CORE_MW_LAYER_IBY_EXPORT_PATH(modematplugin.iby)
+
+PRJ_MMPFILES
+modematplugin.mmp
+
+PRJ_TESTMMPFILES

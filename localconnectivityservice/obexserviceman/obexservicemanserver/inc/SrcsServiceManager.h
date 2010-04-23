@@ -133,7 +133,13 @@ private:
     * @since    S60 v3.2
     */
     void DoCancel();    
-	
+
+    /**
+    * Handling of Service array 
+    * 
+    */	
+    void ServiceArray(CArrayPtr<CSrcsTransport> &aTransport, TBool aState);
+    
 private:
 
    /**
@@ -143,11 +149,12 @@ private:
     
     CArrayPtr<CSrcsTransport>*		iBTConnectionArray;		// array of BT Connections
     CArrayPtr<CSrcsTransport>*		iUSBConnectionArray;	// array of USB Connections
-	CArrayPtr<CSrcsTransport>*		iIrDAConnectionArray;	// array of IrDA Connections	
-	MObexSMRequestObserver*         iRequestObserver;		
-	MObexSMRequestObserver*         iObserver; 
+    CArrayPtr<CSrcsTransport>*		iIrDAConnectionArray;	// array of IrDA Connections
+    MObexSMRequestObserver*         iRequestObserver;	
+    MObexSMRequestObserver*         iObserver; 
     RMessage2                       iMessage;
     TInt                            iErrorState;
+    TPtrC8                          iTransportName;     // Service name
     };
 #endif      // SRCSSERVICEMANAGER_H
 

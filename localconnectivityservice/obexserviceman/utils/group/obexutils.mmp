@@ -52,8 +52,11 @@ SOURCE        updatemusiccollection.cpp
 USERINCLUDE   ../inc
 
 SYSTEMINCLUDE  ../../../inc ../../../../inc  
-MW_LAYER_SYSTEMINCLUDE
+#ifdef NO101APPDEPFIXES
 APP_LAYER_SYSTEMINCLUDE
+#else   //NO101APPDEPFIXES
+MW_LAYER_SYSTEMINCLUDE
+#endif  //NO101APPDEPFIXES
 // SMUT Unbranch
 #ifdef __BT_SAP
 SYSTEMINCLUDE   /epoc32/include/ecom

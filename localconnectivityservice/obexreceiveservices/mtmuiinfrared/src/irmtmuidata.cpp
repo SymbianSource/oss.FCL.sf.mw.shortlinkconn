@@ -30,7 +30,6 @@
 #include <mtmuidsdef.hrh> //kuidmtmquerymaxbodysizevalue etc
 #endif
 #include <obexutils.rsg>
-#include <MtmExtendedCapabilities.hrh>
 #include <obexutilsmessagehandler.h>
 #include "debug.h"
 
@@ -116,11 +115,18 @@ TInt CIrMtmUiData::QueryCapability(
 		    aResponse = KIrMtmUiDataMsgEditorAppValue;
 		    break;
             }
+        /* Infrared is not supported anymore. Implementation for sending over Infrared is left for reference:
+        ( add #include <app/extendedmtmids.hrh> to the included files )
+        code starts here:
+
         case KUidMsvMtmQuerySupportLinks:
             {
             aResponse = ETrue;
             break;
             }
+
+        End of reference implementation for sending over Infrared:
+        */
 	    case KUidMtmQuerySupportAttachmentsValue:
 	    case KUidMtmQueryCanSendMsgValue:
             {

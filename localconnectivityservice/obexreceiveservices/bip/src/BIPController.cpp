@@ -191,7 +191,6 @@ void CBIPController::TransportUpIndication()
     iFile = RFile();
     iFullPathFilename.Zero();
     iCapabilityFileName.Zero();
-    iMsvIdArray.Reset(); 
     }
 
 // ---------------------------------------------------------
@@ -236,7 +235,11 @@ void CBIPController::ObexDisconnectIndication(const TDesC8& /*aInfo*/)
 void CBIPController::TransportDownIndication()
     {
     TRACE_FUNC   
-    TRAP_IGNORE(ShowFileReceivedQueryL());
+    // Remove receiving buffer and files used during file receiving.
+    //
+    delete iBTObject;
+    iBTObject = NULL;
+    TRAP_IGNORE(TObexUtilsMessageHandler::RemoveTemporaryRFileL (iFullPathFilename));  
     iFs.Close();
     }
 
@@ -566,7 +569,7 @@ TInt CBIPController::HandlePutCompleteIndication()
                                                                    iRemoteDeviceName));
     if ( retVal == KErrNone)
         {
-        TRAP (retVal, TObexUtilsMessageHandler::AddEntryToInboxL(iMsvIdParent, iFullPathFilename, &iMsvIdArray));
+        TRAP (retVal, TObexUtilsMessageHandler::AddEntryToInboxL(iMsvIdParent, iFullPathFilename));
         }
     
     
@@ -806,55 +809,6 @@ void CBIPController::CloseReceivingIndicator(TBool aResetDisplayedState)
         iWaitDialog = NULL;
         }
     }
- 
- // ---------------------------------------------------------
- // ShowFileReceivedQuery()
- // ---------------------------------------------------------
- // 
- void CBIPController::ShowFileReceivedQueryL()
-     {
-     // Remove receiving buffer and files used during file receiving.
-     //
-    delete iBTObject;
-    iBTObject = NULL;
-    TObexUtilsMessageHandler::RemoveTemporaryRFileL (iFullPathFilename);    
-    
-    TInt fileCount = iMsvIdArray.Count();         
-    if ( fileCount )
-        {
-        TBool answer = EFalse;        
-        TInt resourceID = R_BT_SAVED_SINGLE;
-        if( fileCount > 1)
-            {
-            resourceID = R_BT_SAVED_MULTIPLE;
-            }
-        answer = TObexUtilsUiLayer::ShowGlobalFileOpenConfirmationQueryL(resourceID, iDefaultFolder);
-        
-        TInt sortMethod = 2; // 0 = by name 1 = by type 2 = most recent file and 3 = largest file
-        
-        if ( answer && fileCount == 1 )  // User accepts the query
-            {
-            TRAPD( error,  TObexUtilsUiLayer::LaunchEditorApplicationL(iMsvIdArray[0]));
-            if ( error != KErrNone )  // file is unsupported
-                {
-                TObexUtilsUiLayer::LaunchFileManagerL(iFullPathFilename,
-                                                      sortMethod,
-                                                      EFalse);  // EFalse -> start file manager in standalone mode
-                }
-            }
-        
-        if ( answer && fileCount > 1 )
-            {
-            // we open the file manager at default folder
-            //
-            TObexUtilsUiLayer::LaunchFileManagerL(iFullPathFilename,
-                                                      sortMethod,
-                                                      EFalse);  // EFalse -> start file manager in standalone mode
-            }
-        iMsvIdArray.Reset();
-        }
-    }
- 
  
  // ---------------------------------------------------------
  // GetDriveWithMaximumFreeSpace()

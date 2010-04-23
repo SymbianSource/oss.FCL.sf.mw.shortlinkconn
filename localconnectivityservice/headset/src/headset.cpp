@@ -24,7 +24,23 @@
 #include <apgcli.h>
 #include <apgtask.h>
 #include <e32property.h>
+#ifdef NO101APPDEPFIXES
 #include <alarmuidomainpskeys.h>
+#else   //NO101APPDEPFIXES
+const TUid KPSUidAlarmExtCntl = { 0x102072D4 }; // reusing an AlarmUI dll UID
+const TUint32 KAlarmStopKey = 0x00000001;
+enum TAlarmUIStopAlarm
+    {
+    EAlarmUIStopAlarmUninitialized = 0,
+    EAlarmUIStopAlarm
+    };
+const TUint32 KAlarmSnoozeKey = 0x00000002;
+enum TAlarmUISnoozeAlarm
+    {
+    EAlarmUISnoozeAlarmUninitialized = 0,
+    EAlarmUISnoozeAlarm
+    };
+#endif  //NO101APPDEPFIXES
 
 #include <mpxplaybackmessage.h>
 #include <mpxmessagegeneraldefs.h>

@@ -92,8 +92,12 @@ void CObexUtilsLaunchWaiter::ConstructL( CMsvEntry* aMessage )
     TInt error = KErrNone;
     TBool isCompleteSelf = EFalse;  
     
-    RFile attachFile;
+    RFile attachFile;        
     TRAP( error, attachFile = store->AttachmentManagerL().GetAttachmentFileL(0));
+    TFileName fullName;
+    attachFile.FullName(fullName);
+    attachFile.Close();
+    
     if ( KErrNone == error )
         {
         CleanupClosePushL(attachFile);  // 4th push
@@ -106,17 +110,16 @@ void CObexUtilsLaunchWaiter::ConstructL( CMsvEntry* aMessage )
             // Launches an application in embedded mode
             iDocumentHandler = CDocumentHandler::NewL( CEikonEnv::Static()->Process() );
             iDocumentHandler->SetExitObserver( this );
-            TRAP( error, iDocumentHandler->OpenFileEmbeddedL( attachFile, dataType, *paramList ));
+            RFile64 shareableFile;
+            TRAP( error, iDocumentHandler->OpenTempFileL(fullName,shareableFile));
+            if ( error == KErrNone)
+                {
+                TRAP( error, iDocumentHandler->OpenFileEmbeddedL( shareableFile, dataType, *paramList ));
+                }
+            shareableFile.Close();
             }
-        else
-            {
-            // Launches an application in standalone mode
-            iDocumentHandler = CDocumentHandler::NewL( );
-            // We do not observe exit event when file is launched in standalone mode.            
-            iDocumentHandler->SetExitObserver( NULL );
-            TRAP( error, iDocumentHandler->OpenFileL( attachFile, dataType));
-            }
-            
+        
+           
         if ( error == KErrNotSupported )  
             // If file is not supported, we open the file manager at file location.
             {
@@ -126,12 +129,9 @@ void CObexUtilsLaunchWaiter::ConstructL( CMsvEntry* aMessage )
                
             TInt sortMethod = 2;  // 0 = 'By name', 1 = 'By type', 
                                   // 2 = 'Most recent first' and 3 = 'Largest first'
-            TFileName fullName;
-            attachFile.FullName(fullName);
-          
-            TRAP (error, TObexUtilsUiLayer::LaunchFileManagerL( fullName, 
-                                                                       sortMethod, 
-                                                                       ETrue )); // ETrue -> launch file manager in embedded mode.
+           TRAP (error, TObexUtilsUiLayer::LaunchFileManagerL( fullName, 
+                                                               sortMethod, 
+                                                               ETrue )); // ETrue -> launch file manager in embedded mode.
             isCompleteSelf = ETrue;
             }  // KErrNotSupported
         

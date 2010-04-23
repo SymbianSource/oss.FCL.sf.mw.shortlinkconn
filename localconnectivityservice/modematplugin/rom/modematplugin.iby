@@ -11,13 +11,14 @@
 *
 * Contributors:
 *
-* Description:
+* Description:  Image description file for project modematplugin
 *
 */
 
-#ifndef __MTMUIINFRAREDRESOURCES_IBY__
-#define __MTMUIINFRAREDRESOURCES_IBY__
 
-data=DATAZ_\resource\messaging\mtm\irmtmui.rsc             resource\messaging\mtm\irmtmui.rsc
+#ifndef __MODEMATPLUGIN_IBY__
+#define __MODEMATPLUGIN_IBY__
+
+ECOM_PLUGIN( modematplugin.dll, modematplugin.rsc )
 
 #endif

@@ -18,8 +18,6 @@
 #ifndef __MTMUIINFRARED_IBY__
 #define __MTMUIINFRARED_IBY__
 
-#ifdef __IRDA
 file=ABI_DIR\BUILD_DIR\irmtmui.dll                          SHARED_LIB_DIR\irmtmui.dll
-#endif
 
 #endif

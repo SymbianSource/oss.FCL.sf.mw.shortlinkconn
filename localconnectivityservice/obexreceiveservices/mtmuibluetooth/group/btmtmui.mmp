@@ -38,7 +38,11 @@ END
 SOURCEPATH      ../src
 USERINCLUDE     ../inc
 SYSTEMINCLUDE  ../../../inc ../../../../inc  
+#ifdef NO101APPDEPFIXES
 APP_LAYER_SYSTEMINCLUDE
+#else   //NO101APPDEPFIXES
+MW_LAYER_SYSTEMINCLUDE
+#endif  //NO101APPDEPFIXES
 
 SOURCE          btmtmuidll.cpp 
 SOURCE          btmtmuidata.cpp 
@@ -48,7 +52,9 @@ LIBRARY         obexutils.lib
 LIBRARY         euser.lib
 LIBRARY         msgs.lib
 LIBRARY         mtur.lib
+#ifdef NO101APPDEPFIXES
 LIBRARY         muiu.lib
+#endif  //NO101APPDEPFIXES
 LIBRARY         bluetooth.lib
 LIBRARY         btdevice.lib
 LIBRARY         btengdiscovery.lib
