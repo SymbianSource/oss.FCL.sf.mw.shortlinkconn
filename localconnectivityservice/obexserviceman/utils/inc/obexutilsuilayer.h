@@ -25,7 +25,7 @@
 #include <data_caging_path_literals.hrh> 
 #include <AknsUtils.h> 
 #include <eikdialg.h>
-#include <obexutils.rsg>
+#include <Obexutils.rsg>
 
 // CONSTANTS
 
@@ -53,6 +53,17 @@ enum TContextMedia
     {
     EBluetooth,
     EInfrared
+    };
+
+/**
+* Backup status.
+* The value is controlled by FileManager
+*/
+enum TFileManagerBkupStatusType
+    {
+    EFileManagerBkupStatusUnset   = 0x00000000,
+    EFileManagerBkupStatusBackup  = 0x00000001,
+    EFileManagerBkupStatusRestore = 0x00000002
     };
 
 // CLASS DECLARATION
@@ -192,6 +203,10 @@ NONSHARABLE_CLASS(  TObexUtilsUiLayer )
         */
         IMPORT_C static void CreateIconsL( TUid aMedia, CArrayPtr<CBitmapArray>* aIconArrays);  
 
+        /**
+         * Checks if backup process is running 
+         */
+        IMPORT_C TBool static IsBackupRunning();
         
         /**
         * Prepares dialog for execution
@@ -205,6 +220,13 @@ NONSHARABLE_CLASS(  TObexUtilsUiLayer )
         * return True if enabled
         */
         TBool static IsCoverDisplayL();
+        
+        /**
+         * Check if process with given id is active now
+         * return True if is active
+         */
+        TBool static ProcessExists( const TSecureId& aSecureId );
+        
         /**
          * A dummy class for opening CMsvSession.
          */

@@ -20,7 +20,7 @@
 // INCLUDE FILES
 #include "irmtmuidata.h"
 #include "irmtmui.h"
-#include <irmsgtypeuid.h>
+#include <app/irmsgtypeuid.h>
 #include <mtclbase.h>
 #include <msvuids.h>
 #ifndef SYMBIAN_ENABLE_SPLIT_HEADERS
@@ -29,7 +29,7 @@
 #include <mtmdef.hrh> //kuidmtmquerymaxbodysizevalue etc
 #include <mtmuidsdef.hrh> //kuidmtmquerymaxbodysizevalue etc
 #endif
-#include <obexutils.rsg>
+#include <Obexutils.rsg>
 #include <obexutilsmessagehandler.h>
 #include "debug.h"
 

@@ -32,6 +32,11 @@ HEADER
 LANGUAGE_IDS
 END
 
+OS_LAYER_SYSTEMINCLUDE
+USERINCLUDE ../inc
+NON_FOUNDATION_ADAPT_LAYER_SYSTEMINCLUDE
+
+
 SOURCEPATH    ../src
 SOURCE        obexutilsuilayer.cpp
 SOURCE        obexutilslaunchwaiter.cpp
@@ -47,9 +52,6 @@ SOURCE        updatemusiccollection.cpp
 #ifdef __BT_SAP
  SOURCE       vMessageHandler.cpp
 #endif
-
-
-USERINCLUDE   ../inc
 
 SYSTEMINCLUDE  ../../../inc ../../../../inc  
 #ifdef NO101APPDEPFIXES

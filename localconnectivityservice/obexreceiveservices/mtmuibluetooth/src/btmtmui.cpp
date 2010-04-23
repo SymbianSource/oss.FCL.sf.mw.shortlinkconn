@@ -25,11 +25,11 @@
 #ifdef NO101APPDEPFIXES
 #include <MuiuMsvProgressReporterOperation.h>
 #endif  //NO101APPDEPFIXES
-#include <btcmtm.h>
+#include <app/btcmtm.h>
 #include <mtmuidef.hrh>
 #include <mtclreg.h>
 #include <obexutilsuilayer.h>
-#include <obexutils.rsg>
+#include <Obexutils.rsg>
 #include <msvuids.h>
 #include <msvids.h>
 #include <obexconstants.h>

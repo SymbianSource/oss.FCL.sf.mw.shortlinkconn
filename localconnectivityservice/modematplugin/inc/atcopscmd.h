@@ -21,7 +21,7 @@
 
 #include <e32base.h>
 #include <e32cmn.h>
-#include <RMmCustomAPI.h>
+#include <rmmcustomapi.h>
 #include <etelpckt.h>
 #include <etelmm.h>
 #include <mmretrieve.h>

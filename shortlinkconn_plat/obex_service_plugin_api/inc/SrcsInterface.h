@@ -111,7 +111,7 @@ private:
     TUid iDtor_ID_Key;
     };
 
-#include "srcsinterface.inl"
+#include "SrcsInterface.inl"
 
 #endif
 

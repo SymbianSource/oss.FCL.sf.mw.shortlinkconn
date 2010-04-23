@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2009 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -286,10 +286,15 @@ TInt CDunAtCmdPusher::CheckAndRemoveOkString()
 void CDunAtCmdPusher::SendReplyData( TBool aRecvBuffer )
     {
     FTRACE(FPrint( _L("CDunAtCmdPusher::SendReplyData()") ));
-    TDesC8* sendBuffer = &iRecvBuffer;
-    if ( !aRecvBuffer )
+    TDesC8* sendBuffer = iOkBuffer;
+    if ( aRecvBuffer )
         {
-        sendBuffer = iOkBuffer;
+        sendBuffer = &iRecvBuffer;
+        // Check if last block of long push and remove "OK" if exists
+        if ( iReplyType==EReplyTypeOther && iReplyBytesLeft==0 )
+            {
+            CheckAndRemoveOkString();
+            }
         }
     FTRACE(FPrint( _L("CDunAtCmdPusher::SendReplyData() send reply:") ));
     FTRACE(FPrintRaw(*sendBuffer) );
@@ -310,7 +315,6 @@ void CDunAtCmdPusher::ManageReplyTypeChange()
             {
             FTRACE(FPrint( _L("CDunAtCmdPusher::ManageReplyTypeChange() EReplyTypeOther") ));
             iNoErrorReceived = ETrue;
-            CheckAndRemoveOkString();
             SendReplyData();
             }
             break;

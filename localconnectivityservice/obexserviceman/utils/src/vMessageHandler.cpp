@@ -22,16 +22,16 @@
 #include "obexutilsdebug.h"
 #include "etelmm.h"
 #include <BTSapDomainPSKeys.h>
-#include <smut.h> // KUidMsgTypeSMS
-#include <smuthdr.h>
+#include <app/smut.h> // KUidMsgTypeSMS
+#include <app/smuthdr.h>
 #include <gsmupdu.h>
 #include <txtrich.h>
 #include <msvuids.h>
 
-#include <csmsaccount.h>
+#include <app/csmsaccount.h>
 
 // SMUT Unbranch
-#include <csmsgetdetdescinterface.h>
+#include <app/csmsgetdetdescinterface.h>
 
 
 // ================= MEMBER FUNCTIONS =======================

@@ -21,7 +21,7 @@
 #include <AiwCommon.hrh>
 
 #include <AiwMenu.h>
-#include <IRSSMenu.rsg>
+#include <irssmenu.rsg>
 #include <btnotif.h>        	// Notifier UID's
 #include <aknnotewrappers.h> 	//For notifier
 #include <featmgr.h>
