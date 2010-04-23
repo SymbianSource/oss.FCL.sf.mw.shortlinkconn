@@ -732,12 +732,21 @@ void CATCOPSCmd::HandleError()
             break; 
         case ESetSystemNetworkBand: 
         case EManuallyRegisterToNetworkAndChooseAccTech: 
-            // Cannot set the access technology, so set it back to EAccTechNotSet. 
-            // This prevents replying to queries with outdated or incorrect acc tech information. 
-            TRACE_INFO( _L("CATCOPSCmd::RunL() couldn't set system network band, so reset access tech."));
-            iAccTech = EAccTechNotSet; 
-            // Fall through to default, because these require an error response. 
-
+			if(iRegistrationMode == EModeManualAutomatic)
+                {
+                // Manual registration failed, try automatic next. 
+                TRACE_INFO( _L("CATCOPSCmd::RunL() registration mode manual automatic, try automatic."));
+                AutomaticNetworkRegistration(); 
+				break;
+                }
+            else 
+                {
+				// Cannot set the access technology, so set it back to EAccTechNotSet. 
+				// This prevents replying to queries with outdated or incorrect acc tech information. 
+				TRACE_INFO( _L("CATCOPSCmd::RunL() couldn't set system network band, so reset access tech."));
+				iAccTech = EAccTechNotSet; 
+				// Fall through to default, because these require an error response. 
+				}
         default: 
             // In all other cases send back an error response. 
             TRACE_INFO( _L("CATCOPSCmd::RunL() reply an error."));

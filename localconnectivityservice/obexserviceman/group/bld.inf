@@ -33,12 +33,13 @@ PRJ_EXPORTS
 ../conf/obexserviceman.confml			MW_LAYER_CONFML(obexserviceman.confml)
 ../conf/obexserviceman_20016BC5.crml	MW_LAYER_CRML(obexserviceman_20016BC5.crml)
 
+../obexservicemanserver/inc/obexservicemanprop.h			MW_LAYER_PLATFORM_EXPORT_PATH(obexservicemanprop.h)
+
 // Backup registration file
 backup_registration.xml  /epoc32/data/z/private/101f7c87/backup_registration.xml
 backup_registration.xml  /epoc32/release/winscw/udeb/z/private/101f7c87/backup_registration.xml
 backup_registration.xml  /epoc32/release/winscw/urel/z/private/101f7c87/backup_registration.xml
 
-../obexservicemanclient/inc/usbobex.h		    |../../../inc/usbobex.h
 
 ../rom/obex.iby                                 /epoc32/rom/include/obex.iby
 ../rom/obex.iby                                 CORE_MW_LAYER_IBY_EXPORT_PATH(obex.iby)

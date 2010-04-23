@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2002-2007 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2002-2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -20,12 +20,18 @@
 // INCLUDE FILES
 #include "SrcsServiceManager.h"
 #include "debug.h"
+#include <e32property.h>
+#include "obexservicemanprop.h"
 
 
 // CONSTANTS
 
 // The granularity of the array used to hold BT, IrDA and USB connnection objects
 static const TInt KConnectionArrayGranularity = 4;
+
+const TUint32 KObexSMSid = {0x101F7C87};
+static _LIT_SECURITY_POLICY_S0(KObexSMOnlyPolicy,KObexSMSid);
+static _LIT_SECURITY_POLICY_PASS(KAllowAllPolicy);
 
 // ================= MEMBER FUNCTIONS =======================
 
@@ -46,7 +52,8 @@ CSrcsServiceManager::CSrcsServiceManager():CActive(CActive::EPriorityStandard)
 //
 CSrcsServiceManager::~CSrcsServiceManager()
     {       
-    Cancel();    
+    Cancel();
+    RProperty::Delete(KUidObexSMCategory, KObexSMPostInitErrorProperty);
     if ( iBTConnectionArray )
         {
         // Cleanup the array
@@ -95,6 +102,13 @@ void CSrcsServiceManager::ConstructL()
     iBTConnectionArray = new(ELeave) CArrayPtrFlat<CSrcsTransport>(KConnectionArrayGranularity);
     iUSBConnectionArray = new(ELeave) CArrayPtrFlat<CSrcsTransport>(KConnectionArrayGranularity);
 	iIrDAConnectionArray = new(ELeave) CArrayPtrFlat<CSrcsTransport>(KConnectionArrayGranularity);
+	
+    TInt err = RProperty::Define(KUidObexSMCategory, KObexSMPostInitErrorProperty, RProperty::EInt, KAllowAllPolicy, KObexSMOnlyPolicy);
+    if ( err != KErrNone && err != KErrAlreadyExists )
+        {
+        User::LeaveIfError(err);
+        }
+    (void)RProperty::Set(KUidObexSMCategory,KObexSMPostInitErrorProperty,KErrNone);
     }
 
 // ---------------------------------------------------------
@@ -132,7 +146,9 @@ void CSrcsServiceManager::DoManageServices(TSrcsTransport aTransport, TBool aSta
     {
     FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: DoManageServices"));
     iObserver=aObserver;
-    iMessage=aMessage;    
+    iMessage=aMessage;
+    iTransportType = aTransport;
+    iTransportState = aState;
     TRAPD(error,RealDoManageServiceL(aTransport,aState));    
     if (error != KErrNone)
         {
@@ -152,6 +168,35 @@ void CSrcsServiceManager::RunL()
     {
     FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: RunL"));
     iObserver->RequestCompleted(iMessage,iStatus.Int());
+
+    // If the transport is being turned on, launch post-initialization routine 
+    // for appropriate service controllers array
+    if (iTransportState)
+        {
+        switch(iTransportType)
+            {
+        case ESrcsTransportBT:
+            FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: RunL(Bluetooth)"));
+            PostInitialize(*iBTConnectionArray);
+            break;
+        case ESrcsTransportUSB:
+            FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: RunL(USB)"));
+            PostInitialize(*iUSBConnectionArray);
+            break;
+        case ESrcsTransportIrDA:
+            FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: RunL(IrDA)"));
+            PostInitialize(*iIrDAConnectionArray);
+            break;
+        default:
+            FTRACE(FPrint(_L("[SRCS]\tserver\tCSrcsServiceManager: ManageServicesL. Transport not supported.")));
+            break;
+            }
+        }
+    else
+        {
+        FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: RunL() - transport is turned off"));
+        }
+
     FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: RunL exit"));
     }
 // ---------------------------------------------------------
@@ -177,7 +222,7 @@ void CSrcsServiceManager::DoCancel()
 void CSrcsServiceManager::RealDoManageServiceL(TSrcsTransport aTransport, TBool aState)
     {    
     FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: RealDoManageServiceL"));
-
+ 
     switch(aTransport)
         {
     case ESrcsTransportBT:
@@ -276,17 +321,52 @@ void CSrcsServiceManager::ServiceArray(CArrayPtr<CSrcsTransport> &aTransport, TB
                 }
 
             // Clean up            
-           infoArrayTranport.ResetAndDestroy();                 
-           infoArrayServiceController.ResetAndDestroy();                
-           CleanupStack::PopAndDestroy(2); //infoArrayServiceController
+            infoArrayTranport.ResetAndDestroy();                 
+            infoArrayServiceController.ResetAndDestroy();                
+            CleanupStack::PopAndDestroy(2); //infoArrayServiceController
            
             }
         }
     else // turn off service
         {
         FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: ManageServicesL(Turn OFF)"));    	        
-        aTransport.ResetAndDestroy();                 
+        aTransport.ResetAndDestroy();
+        // This is a special case for USB transport. Clear errors.
+        if (iTransportType == ESrcsTransportUSB)
+            {
+            (void)RProperty::Set(KUidObexSMCategory,KObexSMPostInitErrorProperty,KErrNone);
+            }
         }        
     FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: RealDoManageServiceL exit"));
-    }    
+    }
+
+// ------------------------------------------------------------------------------------------
+// CSrcsServiceManager
+// This function iterates through all detected service controllers for given transport 
+// and calls post-initialization routines.
+// This solution is implemented mainly to satisfy tough timing requirements for USB transport
+// ------------------------------------------------------------------------------------------
+//
+void CSrcsServiceManager::PostInitialize(CArrayPtr<CSrcsTransport> &aTransport)
+    {
+    FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: PostInitialize()"));
+    for (TInt i=0; i < aTransport.Count(); ++i)
+        {
+        FTRACE(FPrint(_L("[SRCS]\tserver\tCSrcsServiceManager: PostInitilize. Processing Service Controller[%d]"), i));
+        TRAPD(err,aTransport[i]->PostInitializeL());
+        
+        // This is a special case for USB transport to notify the USB OBEX class controller about any errors occured
+        // at Post-Initialization stage.
+        // Post-initialization is not implemented for Bluetooth and IrDA transports, so there is no need to notify.
+        if ((err != KErrNone) && (iTransportType == ESrcsTransportUSB))
+            {
+            (void)RProperty::Set(KUidObexSMCategory,KObexSMPostInitErrorProperty,err);
+            FTRACE(FPrint(_L("[SRCS]\tserver\tCSrcsServiceManager: PostInitialize. Transport[%d]::PostInitializeL() returned %d, exiting..."), i, err));
+            break;
+            }
+        FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: PostInitialize() - DONE post initialization"));
+        }
+    FLOG(_L("[SRCS]\tserver\tCSrcsServiceManager: PostInitialize() exit"));
+    }
+
 // End of file
