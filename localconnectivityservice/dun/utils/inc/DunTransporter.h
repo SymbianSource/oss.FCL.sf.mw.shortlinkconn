@@ -188,35 +188,6 @@ public:
 	};
 
 /**
- *  Notification interface class to report endpoint readiness
- *
- *  @lib dunutils.lib
- *  @since S60 v5.0
- */
-NONSHARABLE_CLASS( MDunEndpointReady )
-	{
-
-public:
-
-    /**
-     * Gets called when endpoint is ready
-     *
-     * @since S60 5.0
-     * @return None
-     */
-    virtual void NotifyEndpointReady() = 0;
-
-    /**
-     * Gets called when endpoint is not ready
-     *
-     * @since S60 5.0
-     * @return None
-     */
-    virtual void NotifyEndpointNotReady() = 0;
-
-	};
-
-/**
  *  Notification interface class to report service advertisement status changes
  *
  *  @lib dunutils.lib

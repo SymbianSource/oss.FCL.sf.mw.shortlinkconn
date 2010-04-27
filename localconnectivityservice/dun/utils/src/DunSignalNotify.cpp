@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2006-2009 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2006-2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -65,8 +65,6 @@ void CDunSignalNotify::ResetData()
     Stop();
     // AddCallback()
     iCallbacks.Close();
-    // AddEndpointReadyCallback()
-    iERCallbacks.Close();
     // Internal
     Initialize();
     FTRACE(FPrint( _L("CDunSignalNotify::ResetData() complete") ));
@@ -99,37 +97,6 @@ TInt CDunSignalNotify::AddCallback( MDunConnMon* aCallback )
         return retTemp;
         }
     FTRACE(FPrint( _L("CDunSignalNotify::AddCallback() complete" ) ));
-    return KErrNone;
-    }
-
-// ---------------------------------------------------------------------------
-// Adds callback for endpoint readiness
-// The callback will be called when the endpoint is ready or not ready
-// ---------------------------------------------------------------------------
-//
-TInt CDunSignalNotify::AddEndpointReadyCallback(
-    MDunEndpointReady* aERCallback )
-    {
-    FTRACE(FPrint( _L("CDunSignalNotify::AddEndpointReadyCallback()" ) ));
-    if ( !aERCallback )
-        {
-        FTRACE(FPrint( _L("CDunSignalNotify::AddEndpointReadyCallback() (aERCallback) not initialized!" ) ));
-        return KErrGeneral;
-        }
-    TInt retTemp = iERCallbacks.Find( aERCallback );
-    if ( retTemp != KErrNotFound )
-        {
-        FTRACE(FPrint( _L("CDunSignalNotify::AddEndpointReadyCallback() (already exists) complete" ) ));
-        return KErrAlreadyExists;
-        }
-    retTemp = iERCallbacks.Append( aERCallback );
-    if ( retTemp != KErrNone )
-        {
-        FTRACE(FPrint( _L("CDunSignalNotify::AddEndpointReadyCallback() (append failed!) complete" ) ));
-        return retTemp;
-        }
-    ReportEndpointReady( ETrue );  // report immediately as this is a hack
-    FTRACE(FPrint( _L("CDunSignalNotify::AddEndpointReadyCallback() complete" ) ));
     return KErrNone;
     }
 
@@ -372,28 +339,6 @@ void CDunSignalNotify::ReportSignalChange( TUint aSetMask, TUint aClearMask )
         }
 
     FTRACE(FPrint( _L("CDunSignalNotify::ReportSignalChange() complete" ) ));
-    }
-
-// ---------------------------------------------------------------------------
-// Reports endpoint ready or not ready
-// ---------------------------------------------------------------------------
-//
-void CDunSignalNotify::ReportEndpointReady( TBool aReady )
-    {
-    FTRACE(FPrint( _L("CDunSignalNotify::ReportEndpointReady()" ) ));
-    TInt count = iERCallbacks.Count();
-    for ( TInt i=0; i<count; i++ )
-        {
-        if ( aReady )
-            {
-            iERCallbacks[i]->NotifyEndpointReady();
-            }
-        else  // not ready
-            {
-            iERCallbacks[i]->NotifyEndpointNotReady();
-            }
-        }
-    FTRACE(FPrint( _L("CDunSignalNotify::ReportEndpointReady() complete" ) ));
     }
 
 // ---------------------------------------------------------------------------
