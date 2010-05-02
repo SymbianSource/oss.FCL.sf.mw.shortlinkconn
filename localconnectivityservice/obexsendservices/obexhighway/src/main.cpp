@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2004 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -11,18 +11,18 @@
 *
 * Contributors:
 *
-* Description:  IBY file for btsendingservice
+* Description:  ?Description
 *
 */
 
+ 
+#include <hbapplication.h>
+#include "btsendserviceinterface.h"
 
-#ifndef BTSENDINGSERVICE_IBY
-#define BTSENDINGSERVICE_IBY
+int main(int argc, char **argv)
+    {
+    QCoreApplication app(argc, argv);
+    BTSendServiceInterface btSendSI;
+    return app.exec();
+    }
 
-#ifdef __BT
-ECOM_PLUGIN(obexservicebtsend.dll,101F86A2.rsc)
-#endif
-
-#endif // BTSENDINGSERVICE_IBY
-
-//  End of File  

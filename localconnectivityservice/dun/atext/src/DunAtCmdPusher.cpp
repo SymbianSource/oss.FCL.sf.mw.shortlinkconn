@@ -103,12 +103,12 @@ void CDunAtCmdPusher::ResetData()
 // Starts AT command handling
 // ---------------------------------------------------------------------------
 //
-TInt CDunAtCmdPusher::IssueRequest( TDesC8& aCommand )
+TInt CDunAtCmdPusher::IssueRequest( TDesC8& aCommand, TBool aNormalMode )
     {
     FTRACE(FPrint( _L("CDunAtCmdPusher::IssueRequest()") ));
     FTRACE(FPrint( _L("CDunAtCmdPusher::IssueRequest() send ATEXT:") ));
     FTRACE(FPrintRaw(aCommand) );
-    if ( iAtPushState != EDunStateIdle )
+    if ( iAtPushState!=EDunStateIdle && aNormalMode )
         {
         FTRACE(FPrint( _L("CDunAtCmdPusher::IssueRequest() (not ready) complete") ));
         return KErrNotReady;
@@ -186,7 +186,19 @@ void CDunAtCmdPusher::SetEndOfCmdLine()
     iLastOkPush = EFalse;
     iCmdAbort = EFalse;
     iStop = EFalse;
+    iEditorMode = EFalse;
     FTRACE(FPrint( _L("CDunAtCmdPusher::SetEndOfCmdLine() complete") ));
+    }
+
+// ---------------------------------------------------------------------------
+// Gets the editor mode status
+// ---------------------------------------------------------------------------
+//
+TBool CDunAtCmdPusher::EditorMode()
+    {
+    FTRACE(FPrint( _L("CDunAtCmdPusher::EditorMode()") ));
+    FTRACE(FPrint( _L("CDunAtCmdPusher::EditorMode() complete") ));
+    return iEditorMode;
     }
 
 // ---------------------------------------------------------------------------
@@ -303,6 +315,79 @@ void CDunAtCmdPusher::SendReplyData( TBool aRecvBuffer )
     }
 
 // ---------------------------------------------------------------------------
+// Manages change in reply type to EReplyTypeOther
+// ---------------------------------------------------------------------------
+//
+void CDunAtCmdPusher::ManageReplyTypeChangeToOther()
+    {
+    FTRACE(FPrint( _L("CDunAtCmdPusher::ManageReplyTypeChangeToOther()") ));
+    iNoErrorReceived = ETrue;
+    SendReplyData();
+    FTRACE(FPrint( _L("CDunAtCmdPusher::ManageReplyTypeChangeToOther() complete") ));
+    }
+
+// ---------------------------------------------------------------------------
+// Manages change in reply type to EReplyTypeOk
+// ---------------------------------------------------------------------------
+//
+void CDunAtCmdPusher::ManageReplyTypeChangeToOk()
+    {
+    FTRACE(FPrint( _L("CDunAtCmdPusher::ManageReplyTypeChangeToOk()") ));
+    // Skip the "OK" replies if not last. Only push the "OK" reply at the end.
+    // iStop changes it so that the we have to send the "OK" immediately and
+    // only stop with NotifyDataPushComplete()
+    TBool found = iCallback->NotifyNextCommandPeekRequest();
+    if ( !found || iStop )
+        {
+        SendReplyData();
+        }
+    else
+        {
+        iNoErrorReceived = ETrue;
+        SetToIdleAndNotifyEnd( KErrNone );
+        }
+    FTRACE(FPrint( _L("CDunAtCmdPusher::ManageReplyTypeChangeToOk() complete") ));
+    }
+
+// ---------------------------------------------------------------------------
+// Manages change in reply type to EReplyTypeError
+// ---------------------------------------------------------------------------
+//
+void CDunAtCmdPusher::ManageReplyTypeChangeToError()
+    {
+    FTRACE(FPrint( _L("CDunAtCmdPusher::ManageReplyTypeChangeToError()") ));
+    if ( iNoErrorReceived )
+       {
+       iAtCmdExt->ReportExternalHandleCommandError();
+       }
+    SendReplyData();
+    FTRACE(FPrint( _L("CDunAtCmdPusher::ManageReplyTypeChangeToError() complete") ));
+    }
+
+// ---------------------------------------------------------------------------
+// Manages change in reply type to EReplyTypeEditor
+// ---------------------------------------------------------------------------
+//
+void CDunAtCmdPusher::ManageReplyTypeChangeToEditor()
+    {
+    FTRACE(FPrint( _L("CDunAtCmdPusher::ManageReplyTypeChangeToEditor()") ));
+    if ( !iEditorMode )
+        {
+        // First change to editor mode: manage it as EReplyTypeOther (prompt)
+        iEditorMode = ETrue;
+        ManageReplyTypeChangeToOther();
+        FTRACE(FPrint( _L("CDunAtCmdPusher::ManageReplyTypeChangeToEditor() (editor) complete") ));
+        return;
+        }
+    // The same reply to editor mode as before: no reply, only notification for
+    // echo/forwarding purposes
+    iCallback->NotifyEditorModeReply();
+    // Do nothing after notifying. The next ForwardEditorModeInput() triggers
+    // the next call of this function.
+    FTRACE(FPrint( _L("CDunAtCmdPusher::ManageReplyTypeChangeToEditor() complete") ));
+    }
+
+// ---------------------------------------------------------------------------
 // Manages change in reply type
 // ---------------------------------------------------------------------------
 //
@@ -314,41 +399,32 @@ void CDunAtCmdPusher::ManageReplyTypeChange()
         case EReplyTypeOther:
             {
             FTRACE(FPrint( _L("CDunAtCmdPusher::ManageReplyTypeChange() EReplyTypeOther") ));
-            iNoErrorReceived = ETrue;
-            SendReplyData();
+            iEditorMode = EFalse;
+            ManageReplyTypeChangeToOther();
             }
             break;
         case EReplyTypeOk:
             {
             FTRACE(FPrint( _L("CDunAtCmdPusher::ManageReplyTypeChange() EReplyTypeOk") ));
-            // Skip the "OK" replies if not last. Only push the "OK" reply at the end.
-            // iStop changes it so that the we have to send the "OK" immediately and
-            // only stop with NotifyDataPushComplete()
-            TBool found = iCallback->NotifyNextCommandPeekRequest();
-            if ( !found || iStop )
-                {
-                SendReplyData();
-                }
-            else
-                {
-                iNoErrorReceived = ETrue;
-                SetToIdleAndNotifyEnd( KErrNone );
-                }
+            iEditorMode = EFalse;
+            ManageReplyTypeChangeToOk();
             }
             break;
         case EReplyTypeError:
             {
             FTRACE(FPrint( _L("CDunAtCmdPusher::ManageReplyTypeChange() EReplyTypeError") ));
-            if ( iNoErrorReceived )
-                {
-                iAtCmdExt->ReportExternalHandleCommandError();
-                }
-            SendReplyData();
+            iEditorMode = EFalse;
+            ManageReplyTypeChangeToError();
             }
+            break;
+        case EReplyTypeEditor:
+            FTRACE(FPrint( _L("CDunAtCmdPusher::ManageReplyTypeChange() EReplyTypeEditor") ));
+            ManageReplyTypeChangeToEditor();
             break;
         default:
             {
             FTRACE(FPrint( _L("CDunAtCmdPusher::ManageReplyTypeChange() EReplyTypeUndefined") ));
+            iEditorMode = EFalse;
             SetToIdleAndNotifyEnd( KErrNone );
             }
             break;

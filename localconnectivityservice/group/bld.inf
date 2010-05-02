@@ -24,7 +24,6 @@ DEFAULT
 #include "../obexsendservices/group/bld.inf"
 #include "../obexreceiveservices/group/bld.inf"
 #include "../dun/group/bld.inf"
-#include "../lcstylustap/group/bld.inf"
 #include "../generichid/group/bld.inf"
 #include "../headset/group/bld.inf"
 

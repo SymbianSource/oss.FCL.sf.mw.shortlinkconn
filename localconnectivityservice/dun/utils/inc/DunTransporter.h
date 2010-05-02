@@ -83,6 +83,7 @@ enum TDunState
     EDunStateCallListen,       // Transporter state for call state listening
     EDunStateAtCmdHandling,    // ATEXT state for AT command handling
     EDunStateAtCmdPushing,     // ATEXT state for AT command reply pushing
+    EDunStateAtCmdEchoing,     // ATEXT state for AT command character echoing (text mode)
     EDunStateAtUrcHandling,    // ATEXT state for URC handling
     EDunStateModeListening,    // ATEXT state for mode change listening
     EDunStateEcomListening,    // ATEXT state for ECOM change listening

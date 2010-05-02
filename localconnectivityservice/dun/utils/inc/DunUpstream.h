@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2007-2009 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2007-2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -22,6 +22,7 @@
 #include "DunTransUtils.h"
 #include "DunStream.h"
 #include "DunAtCmdHandler.h"
+#include "DunAtCmdEchoer.h"
 #include "DunDataPusher.h"
 
 class MDunCmdModeMonitor;
@@ -132,7 +133,8 @@ public:
 NONSHARABLE_CLASS( CDunUpstream ) : public CDunStream,
                                     public MDunAtCmdHandler,
                                     public MDunCmdModeMonitor,
-                                    public MDunAtCmdStatusReporter
+                                    public MDunAtCmdStatusReporter,
+                                    public MDunAtCmdEchoer
     {
 
 public:
@@ -284,6 +286,15 @@ private:
      */
     void NotifyAtCmdHandlingEnd( TInt aStartIndex );
 
+    /**
+     * Notifies about editor mode reply
+     *
+     * @since TB9.2
+     * @param aStart ETrue if start of editor mode, EFalse otherwise
+     * @return Symbian error code on error, KErrNone otherwise
+     */
+    void NotifyEditorModeReply( TBool aStart );
+
 // from base class MDunAtCmdHandler
 
     /**
@@ -321,6 +332,16 @@ private:
      * @return None
      */
     void NotifyCommandModeEnd();
+
+// from base class MDunAtCmdEchoer
+
+    /**
+     * Notifies about completed echo in text mode
+     *
+     * @since TB9.2
+     * @return None
+     */
+    void NotifyEchoComplete();
 
 private:  // data
 

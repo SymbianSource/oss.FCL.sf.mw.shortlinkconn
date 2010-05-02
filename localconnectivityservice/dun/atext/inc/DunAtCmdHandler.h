@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2009 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2009-2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -23,6 +23,7 @@
 #include <atextcommon.h>
 #include "DunDataPusher.h"
 #include "DunAtCmdPusher.h"
+#include "DunAtCmdEchoer.h"
 #include "DunAtEcomListen.h"
 #include "DunAtModeListen.h"
 #include "DunAtNvramListen.h"
@@ -32,6 +33,7 @@ const TInt KDunChSetMaxCharLen = 1;          // Only ASCII supported for now
 const TInt KDunOkBufLength     = 1+1+2+1+1;  // <CR>+<LF>+"OK"+<CR>+<LF>
 const TInt KDunErrorBufLength  = 1+1+5+1+1;  // <CR>+<LF>+"ERROR"+<CR>+<LF>
 const TInt KDunInputBufLength  = (512 + 1);  // 512 chars for command + <CR>
+const TInt KDunEscBufLength    = 1;          // Escape (0x1B) character
 
 class CDunAtUrcHandler;
 class MDunConnMon;
@@ -101,6 +103,30 @@ public:
     };
 
 /**
+ *  Class used for AT command editor mode related functionality
+ *
+ *  @lib dunatext.lib
+ *  @since TB9.2
+ */
+NONSHARABLE_CLASS( TDunEditorModeInfo )
+    {
+
+public:
+
+    /**
+     * Flag to indicate if content found (not used if iContentFindStarted is EFalse)
+     */
+    TBool iContentFound;
+
+    /**
+     * AT command decoding related information for peeked data
+     * (not to be used if HandleNextDecodedCommand() returns EFalse)
+     */
+    TDunDecodeInfo iPeekInfo;
+
+    };
+
+/**
  *  Notification interface class for command mode start/end
  *
  *  @lib dunutils.lib
@@ -156,6 +182,15 @@ public:
      * @return None
      */
     virtual void NotifyAtCmdHandlingEnd( TInt aStartIndex ) = 0;
+
+    /**
+     * Notifies about editor mode reply
+     *
+     * @since TB9.2
+     * @param aStart ETrue if start of editor mode, EFalse otherwise
+     * @return None
+     */
+    virtual void NotifyEditorModeReply( TBool aStart ) = 0;
 
     };
 
@@ -235,6 +270,17 @@ public:
      * @return None
      */
     IMPORT_C void SetEndOfCmdLine( TBool aClearInput );
+
+    /**
+     * Sends a character to be echoed
+     *
+     * @since TB9.2
+     * @param aInput Input to echo
+     * @param aCallback Callback to echo request completions
+     * @return Symbian error code on error, KErrNone otherwise
+     */
+    IMPORT_C TInt SendEchoCharacter( const TDesC8* aInput,
+                                     MDunAtCmdEchoer* aCallback );
 
     /**
      * Stops sending of AT command from decode buffer
@@ -406,6 +452,14 @@ private:
      * @return ETrue if last command decoded, EFalse otherwise
      */
     TBool HandleNextDecodedCommand();
+
+    /**
+     * Finds the start of the next command
+     *
+     * @since TB9.2
+     * @return Index to the next command or Symbian error code on error
+     */
+    TInt FindStartOfNextCommand();
 
     /**
      * Manages end of AT command handling
@@ -622,6 +676,24 @@ private:
      */
     void ManageCharacterChange( TUint aMode );
 
+    /**
+     * Manages editor mode reply
+     *
+     * @since TB9.2
+     * @param aStart ETrue if start of editor mode, EFalse otherwise
+     * @return Symbian error code on error, KErrNone otherwise
+     */
+    TInt ManageEditorModeReply( TBool aStart );
+
+    /**
+     * Finds the next content from the input buffer
+     *
+     * @since TB9.2
+     * @param aStart ETrue if start of editor mode, EFalse otherwise
+     * @return ETrue if next content found, EFalse otherwise
+     */
+    TBool FindNextContent( TBool aStart );
+
 // from base class MDunAtCmdPusher
 
     /**
@@ -631,6 +703,7 @@ private:
      * downstream.
      *
      * @since S60 5.0
+     * @param aError Error code of command processing completion
      * @return None
      */
     TInt NotifyEndOfProcessing( TInt aError );
@@ -651,6 +724,24 @@ private:
      * @return ETrue if next command exists, EFalse otherwise
      */
     TBool NotifyNextCommandPeekRequest();
+
+    /**
+     * Notifies about editor mode reply
+     *
+     * @since TB9.2
+     * @return Symbian error code on error, KErrNone otherwise
+     */
+    TInt NotifyEditorModeReply();
+
+// from base class MDunAtCmdEchoer
+
+    /**
+     * Notifies about completed echo in text mode
+     *
+     * @since TB9.2
+     * @return None
+     */
+    void NotifyEchoComplete();
 
 // from base class MDunAtEcomListen
 
@@ -766,6 +857,11 @@ private:  // data
     TBuf8<KDunInputBufLength> iLastBuffer;
 
     /**
+     * Buffer for <ESC> command
+     */
+    TBuf8<KDunEscBufLength> iEscapeBuffer;
+
+    /**
      * AT command decoding related information
      */
     TDunDecodeInfo iDecodeInfo;
@@ -776,10 +872,21 @@ private:  // data
     TDunParseInfo iParseInfo;
 
     /**
+     * Information for editor mode
+     */
+    TDunEditorModeInfo iEditorModeInfo;
+
+    /**
      * AT command reply pusher
      * Own.
      */
     CDunAtCmdPusher* iCmdPusher;
+
+    /**
+     * AT command reply echoer
+     * Own.
+     */
+    CDunAtCmdEchoer* iCmdEchoer;
 
     /**
      * URC message handlers

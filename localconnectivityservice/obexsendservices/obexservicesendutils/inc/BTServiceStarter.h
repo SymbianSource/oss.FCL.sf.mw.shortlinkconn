@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2002 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2002-2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -29,6 +29,7 @@
 #include <btengsettings.h>
 #include <obexutilsdialog.h>
 #include <msvapi.h>
+#include <hb/hbwidgets/hbdeviceprogressdialogsymbian.h>
 
 // DATA TYPES
 
@@ -105,7 +106,8 @@ NONSHARABLE_CLASS (CBTServiceStarter) : public CActive,
                           public MObexUtilsDialogObserver,
                           public MObexUtilsProgressObserver,
                           public MBTEngSdpResultReceiver,
-                          public MBTEngSettingsObserver
+                          public MBTEngSettingsObserver,
+                          public MHbDeviceProgressDialogObserver
     {
     public:  // Constructors and destructor
         
@@ -157,6 +159,18 @@ NONSHARABLE_CLASS (CBTServiceStarter) : public CActive,
         * @return None.
         */
         void DialogDismissed( TInt aButtonId );
+        
+        /**
+		* From MHbDeviceProgressDialogObserver
+		*
+		*/
+        void ProgressDialogCancelled(const CHbDeviceProgressDialogSymbian *  aDialog);
+        
+	  /**
+		* From MHbDeviceProgressDialogObserver
+		*
+		*/
+        void ProgressDialogClosed(const CHbDeviceProgressDialogSymbian *  aDialog )  ; 
 
         /**
         * From MObexUtilsProgressObserver request for number of bytes sent
@@ -413,7 +427,7 @@ NONSHARABLE_CLASS (CBTServiceStarter) : public CActive,
         CBTDevice*                  iDevice;
         CBTEngDiscovery*            iBTEngDiscovery;
         CBTServiceParameterList*    iList;
-        CObexUtilsDialog*           iDialog;
+ //       CObexUtilsDialog*           iDialog;
         CBTSController*       iController;
 
         TBTServiceType              iService;
@@ -438,6 +452,7 @@ NONSHARABLE_CLASS (CBTServiceStarter) : public CActive,
         TBool                       iFeatureManagerInitialized;
         TBool                       iTriedBIP;
         TBool                       iTriedOPP;
+        CHbDeviceProgressDialogSymbian *iProgressDialog;
     };
 
 #endif      // BT_SERVICE_CONTROLLER_H

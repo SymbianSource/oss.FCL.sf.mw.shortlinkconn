@@ -29,6 +29,7 @@
 #include <obexutilsmessagehandler.h>
 #include <btnotif.h>
 #include <featmgr.h>
+#include "hbdevicemessageboxsymbian.h"
 
 // CONSTANTS
 
@@ -37,7 +38,6 @@ const TUint KBTServiceOPPSending        = 0x1105;
 const TUint KBTServiceDirectPrinting    = 0x1118;
 const TUint KBTServiceImagingResponder  = 0x111B;
 
-const TUint KBTProgressInterval         = 1000000;
 
 // ============================ MEMBER FUNCTIONS ===============================
 
@@ -72,7 +72,7 @@ void CBTServiceStarter::ConstructL()
     {
     FLOG(_L("[BTSU]\t CBTServiceStarter::ConstructL()"));
     iDevice = CBTDevice::NewL();
-    iDialog = CObexUtilsDialog::NewL( this );
+//    iDialog = CObexUtilsDialog::NewL( this );
     FeatureManager::InitializeLibL();
     iFeatureManagerInitialized = ETrue;
     FLOG(_L("[BTSU]\t CBTServiceStarter::ConstructL() completed"));
@@ -108,7 +108,8 @@ CBTServiceStarter::~CBTServiceStarter()
 
     delete iController;
     delete iBTEngDiscovery;
-    delete iDialog;
+ //   delete iDialog;
+    delete iProgressDialog;
 
     if(iWaiter && iWaiter->IsStarted() )
         {
@@ -166,7 +167,8 @@ void CBTServiceStarter::StartServiceL( TBTServiceType aService,
     TBool offline = EFalse;
     if( !power )
         {
-        offline = CheckOfflineModeL();
+        //offline = CheckOfflineModeL();
+         offline = EFalse;
         }
     if( !offline )
         {
@@ -424,11 +426,16 @@ void CBTServiceStarter::LaunchWaitNoteL()
     FLOG(_L("[BTSU]\t CBTServiceStarter::LaunchWaitNoteL()"));
     if ( iService == EBTPrintingService )
         {
-        iDialog->LaunchWaitDialogL( R_BT_PRINTING_WAIT_NOTE );
+ //       iDialog->LaunchWaitDialogL( R_BT_PRINTING_WAIT_NOTE );
         }
     else
         {
-        iDialog->LaunchWaitDialogL( R_BT_CONNECTING_WAIT_NOTE );
+        //       iDialog->LaunchWaitDialogL( R_BT_CONNECTING_WAIT_NOTE );
+        _LIT(KConnectText, "Connecting...");
+        iProgressDialog = CHbDeviceProgressDialogSymbian::NewL(CHbDeviceProgressDialogSymbian::EWaitDialog,this);
+        iProgressDialog->SetTextL(KConnectText);
+        iProgressDialog->ShowL();
+        
         }    
     FLOG(_L("[BTSU]\t CBTServiceStarter::LaunchWaitNoteL() completed"));
     }
@@ -441,10 +448,15 @@ void CBTServiceStarter::CancelWaitNote()
     {
     FLOG(_L("[BTSU]\t CBTServiceStarter::CancelWaitNote()"));
 
-    if ( iDialog )
-        {
-        TRAP_IGNORE( iDialog->CancelWaitDialogL() );
-        }
+  //  if ( iDialog )
+  //      {
+        //       TRAP_IGNORE( iDialog->CancelWaitDialogL() );
+        if(iProgressDialog)
+            {
+            //This has to be tested
+            iProgressDialog->Close();
+            }
+    //    }
 
     FLOG(_L("[BTSU]\t CBTServiceStarter::CancelWaitNote() completed"));
     }
@@ -458,7 +470,8 @@ void CBTServiceStarter::LaunchProgressNoteL( MBTServiceProgressGetter* aGetter,
                                              TInt aTotalSize )
     {
     FLOG(_L("[BTSU]\t CBTServiceStarter::LaunchProgressNoteL()"));
-
+    (void) aTotalSize;
+    
     if ( iService != EBTPrintingService )
         {    
         iProgressGetter = aGetter;        
@@ -468,8 +481,8 @@ void CBTServiceStarter::LaunchProgressNoteL( MBTServiceProgressGetter* aGetter,
         	{
         	iMessageServerIndex = TObexUtilsMessageHandler::CreateOutboxEntryL( 
             KUidMsgTypeBt, R_BT_SEND_OUTBOX_SENDING );        
-        	iDialog->LaunchProgressDialogL( this, aTotalSize, 
-             								R_BT_SENDING_DATA, KBTProgressInterval );	
+   //     	iDialog->LaunchProgressDialogL( this, aTotalSize, 
+     //        								R_BT_SENDING_DATA, KBTProgressInterval );	
         	}        
         iProgressDialogActive=ETrue;     
         }
@@ -485,9 +498,9 @@ void CBTServiceStarter::CancelProgressNote()
     {
     FLOG(_L("[BTSU]\t CBTServiceStarter::CancelProgressNote()"));
 
-    if ( iDialog )
+ //   if ( iDialog )
         {
-        TRAP_IGNORE( iDialog->CancelProgressDialogL() );
+  //      TRAP_IGNORE( iDialog->CancelProgressDialogL() );
         }
     }
 
@@ -529,7 +542,8 @@ void CBTServiceStarter::ShowNote( TInt aReason ) const
     {
     FLOG(_L("[BTSU]\t CBTServiceStarter::ShowNote()"));
      
-    TInt resource = 0;    
+//    TInt resource = 0;
+    TBuf<255> buf;
 
     switch ( aReason )
         {
@@ -537,17 +551,24 @@ void CBTServiceStarter::ShowNote( TInt aReason ) const
             {
             if ( iService == EBTPrintingService )
                 {
-                resource = R_BT_DATA_SENT2;
+               // resource = R_BT_DATA_SENT2;
+                
+                _LIT(KText, "Data Sent");
+                buf.Copy(KText);
                 }
             else
                 {
-                resource = R_BT_DATA_SENT;
+                //resource = R_BT_DATA_SENT;
+                _LIT(KText, "Data Sent");
+                buf.Copy(KText);
                 }
             break;
             }
         case EBTSConnectingFailed:
             {
-            resource = R_BT_DEV_NOT_AVAIL;
+            //resource = R_BT_DEV_NOT_AVAIL;
+            _LIT(KText, "Cannot establish Bluetooth connection");
+            buf.Copy(KText);
             break;
             }
         case EBTSGettingFailed:
@@ -555,11 +576,15 @@ void CBTServiceStarter::ShowNote( TInt aReason ) const
             {
             if ( iService == EBTPrintingService )
                 {
-                resource = R_BT_FAILED_TO_SEND2;
+                _LIT(KText, "Sending failed");
+                //resource = R_BT_FAILED_TO_SEND2;
+                buf.Copy(KText);
                 }
             else
                 {
-                resource = R_BT_FAILED_TO_SEND;
+                _LIT(KText, "Failed to send Data");
+                //resource = R_BT_FAILED_TO_SEND;
+                buf.Copy(KText);
                 }
             break;
             }
@@ -567,37 +592,50 @@ void CBTServiceStarter::ShowNote( TInt aReason ) const
             {
             if ( iService == EBTPrintingService )
                 {
-                resource = R_BT_PRINTING_NOT_SUPPORTED;
+                _LIT(KText, "Printer not supported");
+                buf.Copy(KText);
+            //    resource = R_BT_PRINTING_NOT_SUPPORTED;
                 }
             else
                 {
-                resource = R_BT_FAILED_TO_SEND;
+                _LIT(KText, "Failed to send Data");
+                buf.Copy(KText);
+         //       resource = R_BT_FAILED_TO_SEND;
                 }
             break;
             }
         case EBTSBIPSomeSend:
         	{
-        	resource = R_BT_FAILED_TO_SEND;
+        	_LIT(KText, "Failed to send Data");
+        	 buf.Copy(KText);
+        	//resource = R_BT_FAILED_TO_SEND;
         	break;	
         	}    
         case EBTSBIPOneNotSend:
         	{
-        	resource = R_BT_NOT_RECEIVE_ONE;
+        	_LIT(KText, "Receiving device does not support this image format.");
+        	 buf.Copy(KText);
+        	//resource = R_BT_NOT_RECEIVE_ONE;
         	break;
         	}
         case EBTSBIPNoneSend:
         	{
-        	resource = R_BT_NOT_RECEIVE_ANY;
+        	_LIT(KText, "Receiving device does not support the needed image formats.");
+        	 buf.Copy(KText);
+        	//resource = R_BT_NOT_RECEIVE_ANY;
         	break;
         	}	
         default:
             {            
-            resource = R_BT_DEV_NOT_AVAIL;
+           // resource = R_BT_DEV_NOT_AVAIL;
+            _LIT(KText, "Cannot establish Bluetooth connection");
+            buf.Copy(KText);
             break;
             }
         }        
     
-	TRAP_IGNORE(TObexUtilsUiLayer::ShowInformationNoteL( resource ) );	
+//	TRAP_IGNORE(TObexUtilsUiLayer::ShowInformationNoteL( resource ) );	
+    CHbDeviceMessageBoxSymbian::InformationL(buf);
     FLOG(_L("[BTSU]\t CBTServiceStarter::ShowNote() completed"));
     }
 
@@ -605,10 +643,10 @@ void CBTServiceStarter::ShowNote( TInt aReason ) const
 // CBTServiceStarter::LaunchConfirmationQuery
 // -----------------------------------------------------------------------------
 //
-TInt CBTServiceStarter::LaunchConfirmationQuery(TInt aResourceId)
+TInt CBTServiceStarter::LaunchConfirmationQuery(TInt /*aResourceId*/)
 	{
 	TInt keypress=0;
-	TRAP_IGNORE( keypress = iDialog->LaunchQueryDialogL(  aResourceId ));	
+//	TRAP_IGNORE( keypress = iDialog->LaunchQueryDialogL(  aResourceId ));	
 	if ( !keypress )
 		{
 		FLOG(_L("[BTSU]\t CBTServiceStarter::LaunchConfirmationQuery(), cancelled by user"));
@@ -624,6 +662,7 @@ TInt CBTServiceStarter::LaunchConfirmationQuery(TInt aResourceId)
 //	
 void CBTServiceStarter::StopTransfer(TInt aError)
 	{
+      
 	FLOG(_L("[BTSU]\t CBTServiceStarter::StopTransfer()"));
     Cancel();
 	if( !iUserCancel )
@@ -905,7 +944,7 @@ void CBTServiceStarter::StartDiscoveryL()
 void CBTServiceStarter::TurnBTPowerOnL( const TBTPowerStateValue aState )
     {
 	FLOG( _L("[BTSU]\t CBTServiceStarter::TurnBTPowerOnL()") );
-    if (iName() != EFalse) 
+//    if (iName() != EFalse) 
     	{
     	if( !iBTEngSettings )
 	        {
@@ -927,7 +966,7 @@ void CBTServiceStarter::TurnBTPowerOnL( const TBTPowerStateValue aState )
 	        StartDiscoveryL();
 	        }
     	}
-    else
+ /*   else
     	{
         if ( !iNotifier.Handle() )
 	        {
@@ -940,7 +979,7 @@ void CBTServiceStarter::TurnBTPowerOnL( const TBTPowerStateValue aState )
         iNotifier.StartNotifierAndGetResponse( iStatus, KBTGenericQueryNotifierUid, 
                                                   pckg, iName );
         SetActive();
-    	}
+    	}*/
 	FLOG(_L("[BTSU]\t CBTServiceStarter::TurnBTPowerOnL() - completed"));
     }
 
@@ -988,6 +1027,7 @@ void CBTServiceStarter::RunL()
 
     if( err )
         {
+      
         err = ( err == KErrNotSupported ? KErrCancel : err );
         if ( iWaiter && err != KErrInUse && err != KErrCancel )
             {
@@ -1012,4 +1052,25 @@ TInt CBTServiceStarter::RunError( TInt aError )
 	FLOG(_L("[BTSU]\t CBTServiceStarter::RunError() - completed"));
     return KErrNone;
     }
-//  End of File
+
+
+
+
+void CBTServiceStarter::ProgressDialogCancelled(const CHbDeviceProgressDialogSymbian*/*  aDialog*/)
+    {
+    FLOG(_L("[BTSU]\t CBTServiceStarter::ProgressDialogCancelled(), cancelled by user"));        
+    iUserCancel=ETrue;
+    if ( iController )
+        {
+        iController->Abort();
+        }
+    else 
+       {
+       StopTransfer(KErrCancel);
+       }    
+    }
+
+
+void CBTServiceStarter::ProgressDialogClosed(const CHbDeviceProgressDialogSymbian* /* aDialog*/)
+    {
+    }

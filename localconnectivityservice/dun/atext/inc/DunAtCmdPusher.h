@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2008-2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -63,6 +63,14 @@ public:
      */
     virtual TBool NotifyNextCommandPeekRequest() = 0;
 
+    /**
+     * Notifies about editor mode reply
+     *
+     * @since TB9.2
+     * @return Symbian error code on error, KErrNone otherwise
+     */
+    virtual TInt NotifyEditorModeReply() = 0;
+
     };
 
 /**
@@ -120,10 +128,11 @@ public:
      * Starts AT command handling
      *
      * @since S60 5.0
-     * @param aCommand AT command to handle
+     * @param aCommand AT command or editor mode input to handle
+     * @param aNormalMode ETrue if request issue for normal mode
      * @return Symbian error code on error, KErrNone otherwise
      */
-    TInt IssueRequest( TDesC8& aCommand );
+    TInt IssueRequest( TDesC8& aCommand, TBool aNormalMode=ETrue );
 
     /**
      * Stops AT command handling
@@ -150,6 +159,14 @@ public:
      * @return None
      */
     void SetEndOfCmdLine();
+
+    /**
+     * Gets the editor mode status
+     *
+     * @since TB9.2
+     * @return ETrue if in editor mode, EFalse otherwise
+     */
+    TBool EditorMode();
 
 private:
 
@@ -195,6 +212,38 @@ private:
      * @return None
      */
     void SendReplyData( TBool aRecvBuffer=ETrue );
+
+    /**
+     * Manages change in reply type to EReplyTypeOther
+     *
+     * @since TB9.2
+     * @return None
+     */
+    void ManageReplyTypeChangeToOther();
+
+    /**
+     * Manages change in reply type to EReplyTypeOk
+     *
+     * @since TB9.2
+     * @return None
+     */
+    void ManageReplyTypeChangeToOk();
+
+    /**
+     * Manages change in reply type to EReplyTypeError
+     *
+     * @since TB9.2
+     * @return None
+     */
+    void ManageReplyTypeChangeToError();
+
+    /**
+     * Manages change in reply type to EReplyTypeEditor
+     *
+     * @since TB9.2
+     * @return None
+     */
+    void ManageReplyTypeChangeToEditor();
 
     /**
      * Manages change in reply type
@@ -312,6 +361,11 @@ private:  // data
      * Flag indicating if stop needed after the next reply
      */
     TBool iStop;
+
+    /**
+     * Flag indicating if in editor mode
+     */
+    TBool iEditorMode;
 
     };
 
