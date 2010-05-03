@@ -23,4 +23,4 @@ PRJ_PLATFORMS
 DEFAULT
 
 PRJ_EXPORTS
-../inc/secondarydisplay/dunsecondarydisplayapi.h    MW_LAYER_PLATFORM_EXPORT_PATH(secondarydisplay/dunsecondarydisplayapi.h)
+../inc/secondarydisplay/dunsecondarydisplayapi.h    MW_LAYER_PLATFORM_EXPORT_PATH(SecondaryDisplay/dunsecondarydisplayapi.h)

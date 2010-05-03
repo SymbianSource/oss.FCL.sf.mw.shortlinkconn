@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2006-2009 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2006-2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -651,7 +651,6 @@ TInt CDunTransUtils::DoAddConnMonCallback( TInt aIndex,
     CDunUpstream* upstream = channelData.iUpstreamRW;
     CDunDownstream* downstream = channelData.iDownstreamRW;
 
-    // Set command notify endpoint readiness callbacks
     if ( aDirection == EDunReaderUpstream )
         {
         // Initialize stream for AT parsing (ignore errors)
@@ -676,9 +675,6 @@ TInt CDunTransUtils::DoAddConnMonCallback( TInt aIndex,
             {
             // Add callback (ignore errors)
             channelData.iUpstreamSignalCopy->AddCallback( aCallback );
-            // Add endpoint readiness callback (ignore errors )
-            MDunEndpointReady* erHandler = downstream->EndpointReadyHandler();
-            channelData.iUpstreamSignalCopy->AddEndpointReadyCallback( erHandler );
             }
         }
     else if ( streamType == EDunStreamTypeDownstream )
@@ -688,8 +684,6 @@ TInt CDunTransUtils::DoAddConnMonCallback( TInt aIndex,
             {
             // Add callback (ignore errors)
             channelData.iDownstreamSignalCopy->AddCallback( aCallback );
-            // Note: Nokia's adaptation doesn't support full signals so don't
-            // add the endpoint readiness callback here
             }
         }
     else
@@ -709,9 +703,6 @@ TInt CDunTransUtils::DoAddConnMonCallback( TInt aIndex,
             }
         // Add callback (ignore errors)
         channelData.iSignalNotify->AddCallback( aCallback );
-        // Add endpoint readiness callback (ignore errors )
-        MDunEndpointReady* erHandler = downstream->EndpointReadyHandler();
-        channelData.iSignalNotify->AddEndpointReadyCallback( erHandler );
         }
 
     // Add callback (ignore errors)

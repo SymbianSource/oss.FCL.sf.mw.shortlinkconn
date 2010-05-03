@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2006-2007 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2006-2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -62,16 +62,6 @@ public:
      * @return Symbian error code on error, KErrNone otherwise
      */
     TInt AddCallback( MDunConnMon* aCallback );
-
-    /**
-     * Adds callback for endpoint readiness
-     * The callback will be called when the endpoint is ready or not ready
-     *
-     * @since S60 5.0
-     * @param aEPCallback Callback to call when writes can/can't be done
-     * @return Symbian error code on error, KErrNone otherwise
-     */
-    TInt AddEndpointReadyCallback( MDunEndpointReady* aEPCallback );
 
     /**
      * Sets media to use for this endpoint monitor
@@ -160,15 +150,6 @@ private:
      */
     void ChangeDownstreamSignal( TUint aSetMask, TUint aClearMask );
 
-    /**
-     * Reports endpoint ready or not ready
-     *
-     * @since S60 5.0
-     * @param aReady ETrue if endpoint ready, EFalse otherwise
-     * @return None
-     */
-    void ReportEndpointReady( TBool aReady );
-
 // from base class CActive
 
     /*
@@ -196,12 +177,6 @@ private:  // data
      * Normally contains only one callback
      */
     RPointerArray<MDunConnMon> iCallbacks;
-
-    /**
-     * Callback(s) to call when notification(s) via MDunEndpointReady to be made
-     * Normally contains only one callback for upstream
-     */
-    RPointerArray<MDunEndpointReady> iERCallbacks;
 
     /**
      * Callback(s) to call when command mode starts or ends

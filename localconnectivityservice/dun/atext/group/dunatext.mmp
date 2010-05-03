@@ -33,6 +33,7 @@ SOURCE                  DunAtUrcHandler.cpp
 SOURCE                  DunAtModeListen.cpp
 SOURCE                  DunAtEcomListen.cpp
 SOURCE                  DunAtNvramListen.cpp
+SOURCE                  DunAtSpecialCmdHandler.cpp
 
 USERINCLUDE             ../inc ../../utils/inc
 
@@ -48,4 +49,5 @@ SYSTEMINCLUDE           ../../../inc
 LIBRARY                 atextclient.lib
 LIBRARY                 atextcommon.lib
 LIBRARY                 euser.lib
+LIBRARY                 bafl.lib
 DEBUGLIBRARY            flogger.lib
