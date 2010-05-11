@@ -31,7 +31,7 @@
 #include    <sysutil.h>
 #include    <btengdomaincrkeys.h> 
 #include    <msvids.h>
-#include    <pathinfo.h>          // provides interface for quering system paths 
+#include    <DriveInfo.h> 
 #include    <es_sock.h>
 #include    <bt_sock.h>
 
@@ -570,23 +570,15 @@ TBool COPPController::CheckCapacityL()
     
     RFs rfs ;
     User::LeaveIfError(rfs.Connect());
-    
-    TFileName mmcRoot = PathInfo::MemoryCardRootPath();   // e.g. "E:\\"
-    
+         
     TInt mmcDrive = KDefaultDrive;   // External memroy card  
-    TInt imsDrive = KDefaultDrive;   // Internal mass storage
-    
-    if ( mmcRoot == _L("E:\\"))
-        {
-        mmcDrive = EDriveE;
-        imsDrive = EDriveF;
-        }
-    else if ( mmcRoot == _L("F:\\") )
-        {
-        mmcDrive = EDriveF;
-        imsDrive = EDriveE;
-        }
+    TInt imsDrive = KDefaultDrive;   // Internal mass storage   
 
+    User::LeaveIfError(DriveInfo::GetDefaultDrive(DriveInfo::EDefaultMassStorage, imsDrive));
+    User::LeaveIfError(DriveInfo::GetDefaultDrive(DriveInfo::EDefaultRemovableMassStorage, mmcDrive));      
+    
+    TRACE_INFO( (_L( "[oppreceiveservice] CheckCapacityL imsDrive=%d; mmcDrive=%d\t" ),imsDrive, mmcDrive ) );
+    
     TVolumeInfo volumeInfo;
     TInt err = rfs.Volume(volumeInfo, imsDrive);
     
@@ -595,7 +587,7 @@ TBool COPPController::CheckCapacityL()
     if ( !err )
         {
         // Check capacity on Internal mass storage            
-        TRACE_INFO( (_L( "[oppreceiveservice] CheckCapacityL Internal mass storage E\t" )) );
+        TRACE_INFO( (_L( "[oppreceiveservice] CheckCapacityL Internal mass storage\t" )) );
         if ( !SysUtil::DiskSpaceBelowCriticalLevelL( &rfs, filesize, imsDrive ) )
             {
             iDrive = imsDrive;            
@@ -607,7 +599,7 @@ TBool COPPController::CheckCapacityL()
         if ( !err )
             {
             // Check capacity on Internal mass storage    
-            TRACE_INFO( (_L( "[oppreceiveservice] CheckCapacityL Checking memory card F\t" )) );
+            TRACE_INFO( (_L( "[oppreceiveservice] CheckCapacityL Checking memory card\t" )) );
             if ( !SysUtil::DiskSpaceBelowCriticalLevelL( &rfs, filesize, mmcDrive ) )
                 {                    
                 iDrive = mmcDrive;

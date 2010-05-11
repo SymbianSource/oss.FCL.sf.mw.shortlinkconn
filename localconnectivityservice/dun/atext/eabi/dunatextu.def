@@ -8,4 +8,5 @@ EXPORTS
 	_ZN16CDunAtCmdHandler8StartUrcEv @ 7 NONAME
 	_ZN16CDunAtCmdHandler9ResetDataEv @ 8 NONAME
 	_ZN16CDunAtCmdHandler18ManageAbortRequestEv @ 9 NONAME
+	_ZN16CDunAtCmdHandler17SendEchoCharacterEPK6TDesC8P15MDunAtCmdEchoer @ 10 NONAME
 

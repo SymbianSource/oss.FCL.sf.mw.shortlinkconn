@@ -32,7 +32,7 @@
 #include    <Obexutils.rsg>
 #include    <sysutil.h>
 #include    <bautils.h>
-#include    <pathinfo.h>                   // provides interface for quering system paths 
+#include    <driveinfo.h>                   
 #include    <AknWaitDialog.h>
 #include    <btengdomaincrkeys.h> 
 #include    <e32math.h> 
@@ -635,21 +635,14 @@ TBool CBIPController::CheckCapacityL()
     iDrive = EDriveZ; // Intialize iDrive to Z
     TInt filesize = iBTObject->Length();
     
-    TFileName mmcRoot = PathInfo::MemoryCardRootPath();   // e.g. "E:\\"
-    
     TInt mmcDrive = KDefaultDrive;   // External memory card  
     TInt imsDrive = KDefaultDrive;   // Internal mass storage
     
-    if ( mmcRoot == _L("E:\\"))
-        {
-        mmcDrive = EDriveE;
-        imsDrive = EDriveF;
-        }
-    else if ( mmcRoot == _L("F:\\") )
-        {
-        mmcDrive = EDriveF;
-        imsDrive = EDriveE;
-        }
+    User::LeaveIfError(DriveInfo::GetDefaultDrive(DriveInfo::EDefaultMassStorage, imsDrive));
+    User::LeaveIfError(DriveInfo::GetDefaultDrive(DriveInfo::EDefaultRemovableMassStorage, mmcDrive));      
+     
+    TRACE_INFO( (_L( "[oppreceiveservice] CheckCapacityL imsDrive=%d; mmcDrive=%d\t" ),imsDrive, mmcDrive ) );
+
     TVolumeInfo volumeInfo;
     TInt err = iFs.Volume(volumeInfo, imsDrive);
     

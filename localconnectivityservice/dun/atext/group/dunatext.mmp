@@ -27,6 +27,7 @@ CAPABILITY              CAP_GENERAL_DLL
 VENDORID                VID_DEFAULT
 
 SOURCEPATH              ../src
+SOURCE                  DunAtCmdEchoer.cpp
 SOURCE                  DunAtCmdHandler.cpp
 SOURCE                  DunAtCmdPusher.cpp
 SOURCE                  DunAtUrcHandler.cpp

@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008-2009 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2008-2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -499,6 +499,31 @@ void CDunUpstream::NotifyAtCmdHandlingEnd( TInt aStartIndex )
     }
 
 // ---------------------------------------------------------------------------
+// From class MDunAtCmdStatusReporter
+// Notifies about editor mode reply
+// ---------------------------------------------------------------------------
+//
+void CDunUpstream::NotifyEditorModeReply( TBool aStart )
+    {
+    FTRACE(FPrint( _L("CDunUpstream::NotifyEditorModeReply()" )));
+    if ( iParseData.iDataMode )
+        {
+        FTRACE(FPrint( _L("CDunUpstream::NotifyEditorModeReply() (not ready) complete" )));
+        return;
+        }
+    // If start of editor mode then just reissue the read request
+    // If continuation then echo and reissue the read request
+    if ( aStart )
+        {
+        IssueRequest();
+        FTRACE(FPrint( _L("CDunUpstream::NotifyEditorModeReply() (start) complete" )));
+        return;
+        }
+    iParseData.iAtCmdHandler->SendEchoCharacter( iBufferPtr, this );
+    FTRACE(FPrint( _L("CDunUpstream::NotifyEditorModeReply() complete" )));
+    }
+
+// ---------------------------------------------------------------------------
 // From class MDunAtCmdHandler
 // Starts URC message handling
 // ---------------------------------------------------------------------------
@@ -580,4 +605,16 @@ void CDunUpstream::NotifyCommandModeEnd()
     // NotifyAtCmdHandlingEnd().
     IssueRequest();
     FTRACE(FPrint( _L("CDunUpstream::NotifyCommandModeEnd() complete" )));
+    }
+
+// ---------------------------------------------------------------------------
+// From class MDunAtCmdEchoer.
+// Notifies about command mode end
+// ---------------------------------------------------------------------------
+//
+void CDunUpstream::NotifyEchoComplete()
+    {
+    FTRACE(FPrint( _L("CDunUpstream::NotifyEchoComplete()" )));
+    IssueRequest();
+    FTRACE(FPrint( _L("CDunUpstream::NotifyEchoComplete() complete" )));
     }
