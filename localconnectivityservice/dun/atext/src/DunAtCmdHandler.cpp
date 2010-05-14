@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2009 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2009-2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -35,7 +35,8 @@
 #include "DunDownstream.h"
 #include "DunDebug.h"
 
-const TInt8 KDunCancel = 24;
+const TInt8 KDunCancel = 24;  // Used for line editing, cancel character
+const TInt8 KDunEscape = 27;  // Used for editor ending, escape character
 
 // ---------------------------------------------------------------------------
 // Two-phased constructor.
@@ -79,6 +80,8 @@ EXPORT_C void CDunAtCmdHandler::ResetData()
     Stop();
     // NewL()
     DeletePluginHandlers();
+    delete iCmdEchoer;
+    iCmdEchoer = NULL;
     delete iNvramListen;
     iNvramListen = NULL;
     delete iModeListen;
@@ -145,7 +148,16 @@ EXPORT_C TInt CDunAtCmdHandler::ParseCommand( TDesC8& aCommand,
     FTRACE(FPrint( _L("CDunAtCmdHandler::ParseCommand()") ));
     FTRACE(FPrint( _L("CDunAtCmdHandler::ParseCommand() received:") ));
     FTRACE(FPrintRaw(aCommand) );
-    iCommand = &aCommand;
+    TBool editorMode = iCmdPusher->EditorMode();
+    if ( editorMode )
+        {
+        // Note: return here with "no partial input" and some error to fool
+        // CDunUpstream into not reissuing the read request.
+        iCmdPusher->IssueRequest( aCommand, EFalse );
+        aPartialInput = EFalse;
+        return KErrGeneral;
+        }
+    iCommand = &aCommand;  // iCommand only for normal mode
     // Manage partial AT command
     TBool needsCarriage = ETrue;
     TBool okToExit = ManagePartialCommand( aCommand, needsCarriage );
@@ -180,7 +192,7 @@ EXPORT_C TInt CDunAtCmdHandler::ParseCommand( TDesC8& aCommand,
     iDecodeInfo.iFirstDecode = ETrue;
     iDecodeInfo.iDecodeIndex = 0;
     HandleNextDecodedCommand();
-    FTRACE(FPrint( _L("CDunAtCmdHandler::ParseCommand() (not supported) complete") ));
+    FTRACE(FPrint( _L("CDunAtCmdHandler::ParseCommand() complete") ));
     aPartialInput = EFalse;
     return KErrNone;
     }
@@ -210,6 +222,19 @@ EXPORT_C void CDunAtCmdHandler::SetEndOfCmdLine( TBool aClearInput )
     }
 
 // ---------------------------------------------------------------------------
+// Sends a character to be echoed
+// ---------------------------------------------------------------------------
+//
+EXPORT_C TInt CDunAtCmdHandler::SendEchoCharacter( const TDesC8* aInput,
+                                                   MDunAtCmdEchoer* aCallback )
+    {
+    FTRACE(FPrint( _L("CDunAtCmdHandler::SendEchoCharacter()") ));
+    TInt retVal = iCmdEchoer->SendEchoCharacter( aInput, aCallback );
+    FTRACE(FPrint( _L("CDunAtCmdHandler::SendEchoCharacter() complete") ));
+    return retVal;
+    }
+
+// ---------------------------------------------------------------------------
 // Stops sending of AT command from parse buffer
 // ---------------------------------------------------------------------------
 //
@@ -223,7 +248,12 @@ EXPORT_C TInt CDunAtCmdHandler::Stop()
         return KErrNotReady;
         }
     iCmdPusher->Stop();
-    iHandleState = EDunStateIdle;
+    // The line below is used in the case when this function is called by
+    // CDunUpstream as a result of "data mode ON" change notification.
+    // In this case it is possible that HandleNextDecodedCommand() returns
+    // without resetting the iInputBuffer because of the way it checks the
+    // iHandleState.
+    ManageEndOfCmdHandling( EFalse, ETrue, ETrue );
     FTRACE(FPrint( _L("CDunAtCmdHandler::Stop() complete") ));
     return KErrNone;
     }
@@ -313,28 +343,21 @@ void CDunAtCmdHandler::ConstructL()
     CreateSpecialCommandsL();
     // Create the plugin handlers
     CreatePluginHandlersL();
+    // Create the echo handler
+    iCmdEchoer = CDunAtCmdEchoer::NewL( iDownstream );
     // Create the listeners
-    CDunAtEcomListen* ecomListen = CDunAtEcomListen::NewLC( &iAtCmdExt, this );
-    CDunAtModeListen* modeListen = CDunAtModeListen::NewLC( &iAtCmdExtCommon,
-                                                           this );
-    CDunAtNvramListen* nvramListen = CDunAtNvramListen::NewLC( &iAtCmdExt,
-                                                               &iAtCmdExtCommon );
+    iEcomListen = CDunAtEcomListen::NewL( &iAtCmdExt, this );
+    iModeListen = CDunAtModeListen::NewL( &iAtCmdExtCommon, this );
+    iNvramListen = CDunAtNvramListen::NewL( &iAtCmdExt, &iAtCmdExtCommon );
+    iAtSpecialCmdHandler = CDunAtSpecialCmdHandler::NewL();
     // Set the default modes (+report) and characters
     GetAndSetDefaultSettingsL();
     // Start listening
-    ecomListen->IssueRequest();
-    modeListen->IssueRequest();
-    nvramListen->IssueRequest();
-    CleanupStack::Pop( nvramListen );
-    CleanupStack::Pop( modeListen );
-    CleanupStack::Pop( ecomListen );
+    iEcomListen->IssueRequest();
+    iModeListen->IssueRequest();
+    iNvramListen->IssueRequest();
     CleanupStack::Pop( &iAtCmdExtCommon );
     CleanupStack::Pop( &iAtCmdExt );
-    iEcomListen = ecomListen;
-    iModeListen = modeListen;
-    iNvramListen = nvramListen;
-    
-    iAtSpecialCmdHandler = CDunAtSpecialCmdHandler::NewL();
     FTRACE(FPrint( _L("CDunAtCmdHandler::ConstructL() complete") ));
     }
 
@@ -356,6 +379,7 @@ void CDunAtCmdHandler::Initialize()
     iDecodeInfo.iDecodeIndex = KErrNotFound;
     iDecodeInfo.iPrevChar = 0;
     iDecodeInfo.iPrevExists = EFalse;
+    iEditorModeInfo.iContentFound = EFalse;
     iCmdPusher = NULL;
     iEcomListen = NULL;
     iModeListen = NULL;
@@ -791,6 +815,34 @@ TBool CDunAtCmdHandler::HandleNextDecodedCommand()
     }
 
 // ---------------------------------------------------------------------------
+// Finds the start of the next command
+// ---------------------------------------------------------------------------
+//
+TInt CDunAtCmdHandler::FindStartOfNextCommand()
+    {
+    FTRACE(FPrint( _L("CDunAtCmdHandler::FindStartOfNextCommand()") ));
+    // Note: here we need to avoid internal recursion when parsing the
+    // multiple IsEndOfCommand() and IsDelimiterCharacter() markers inside the
+    // same upstream block.
+    // Skip all the extra markers except the one we already know to exist.
+    TInt i;
+    TInt startVal = iEndIndex + 1;
+    TInt foundIndex = KErrNotFound;
+    TInt count = iCommand->Length();
+    for ( i=startVal; i<count; i++ )
+        {
+        TChar character = (*iCommand)[i];
+        if ( !(IsEndOfCommand(character)||IsDelimiterCharacter(character)) )
+            {
+            foundIndex = i;
+            break;
+            }
+        }
+    FTRACE(FPrint( _L("CDunAtCmdHandler::FindStartOfNextCommand() complete") ));
+    return foundIndex;
+    }
+
+// ---------------------------------------------------------------------------
 // Manages end of AT command handling
 // ---------------------------------------------------------------------------
 //
@@ -814,23 +866,7 @@ void CDunAtCmdHandler::ManageEndOfCmdHandling( TBool aNotifyExternal,
         FTRACE(FPrint( _L("CDunAtCmdHandler::ManageEndOfCmdHandling() (no external) complete") ));
         return;
         }
-    // Note: here we need to avoid internal recursion when parsing the
-    // multiple IsEndOfCommand() and IsDelimiterCharacter() markers inside the
-    // same upstream block.
-    // Skip all the extra markers except the one we already know to exist.
-    TInt i;
-    TInt startVal = iEndIndex + 1;
-    TInt foundIndex = KErrNotFound;
-    TInt count = iCommand->Length();
-    for ( i=startVal; i<count; i++ )
-        {
-        TChar character = (*iCommand)[i];
-        if ( !(IsEndOfCommand(character)||IsDelimiterCharacter(character)) )
-            {
-            foundIndex = i;
-            break;
-            }
-        }
+    TInt foundIndex = FindStartOfNextCommand();
     iUpstream->NotifyAtCmdHandlingEnd( foundIndex );
     FTRACE(FPrint( _L("CDunAtCmdHandler::ManageEndOfCmdHandling() complete") ));
     }
@@ -923,6 +959,7 @@ void CDunAtCmdHandler::RestoreOldDecodeInfo( TBool aPeek,
     FTRACE(FPrint( _L("CDunAtCmdHandler::RestoreOldDecodeInfo()") ));
     if ( aPeek )
         {
+        iEditorModeInfo.iPeekInfo = iDecodeInfo;
         iDecodeInfo = aOldInfo;
         }
     FTRACE(FPrint( _L("CDunAtCmdHandler::RestoreOldDecodeInfo() complete") ));
@@ -1529,6 +1566,65 @@ void CDunAtCmdHandler::ManageCharacterChange( TUint aMode )
     }
 
 // ---------------------------------------------------------------------------
+// Manages editor mode reply
+// ---------------------------------------------------------------------------
+//
+TInt CDunAtCmdHandler::ManageEditorModeReply( TBool aStart )
+    {
+    FTRACE(FPrint( _L("CDunAtCmdHandler::ManageEditorModeReply()" ) ));
+    // Two modes possible here:
+    // 1) Sending data directly from DTE to DCE, i.e. no subsequent data in
+    //    the input buffer -> Reissue read request from DTE.
+    // 2) Sending data from input buffer to DCE -> Do not reissue read request
+    //    from DTE: send the data in a loop
+    // In summary: send data byte-by-byte in editor mode until end of input.
+    // When end of input notify CDunUpstream to reissue the read request.
+    TBool nextContentFound = FindNextContent( aStart );
+    if ( !nextContentFound )
+        {
+        iUpstream->NotifyEditorModeReply( aStart );
+        FTRACE(FPrint( _L("CDunAtCmdHandler::NotifyEditorModeReply() complete") ));
+        return KErrNone;
+        }
+    // In block mode end the block mode by sending <ESC> and hope it works.
+    iEscapeBuffer.Zero();
+    iEscapeBuffer.Append( KDunEscape );
+    iCmdPusher->IssueRequest( iEscapeBuffer, EFalse );
+    FTRACE(FPrint( _L("CDunAtCmdHandler::ManageEditorModeReply() complete" ) ));
+    return KErrNone;
+    }
+
+// ---------------------------------------------------------------------------
+// Finds the next content from the input data
+// ---------------------------------------------------------------------------
+//
+TBool CDunAtCmdHandler::FindNextContent( TBool aStart )
+    {
+    FTRACE(FPrint( _L("CDunAtCmdHandler::FindNextContent()" ) ));
+    if ( !aStart )
+        {
+        FTRACE(FPrint( _L("CDunAtCmdHandler::FindNextContent() (skip) complete" ) ));
+        return iEditorModeInfo.iContentFound;
+        }
+    iEditorModeInfo.iContentFound = EFalse;
+    TInt foundCmdIndex = KErrNotFound;
+    TBool nextContentFound = ExtractNextDecodedCommand( ETrue );  // peek
+    if ( !nextContentFound )
+        {
+        // Check the next subblock
+        foundCmdIndex = FindStartOfNextCommand();
+        }
+    if ( !nextContentFound && foundCmdIndex<0 )
+        {
+        FTRACE(FPrint( _L("CDunAtCmdHandler::FindNextContent() (not found) complete") ));
+        return EFalse;
+        }
+    iEditorModeInfo.iContentFound = ETrue;
+    FTRACE(FPrint( _L("CDunAtCmdHandler::FindNextContent() complete" ) ));
+    return ETrue;
+    }
+
+// ---------------------------------------------------------------------------
 // From class MDunAtCmdPusher.
 // Notifies about end of AT command processing. This is after all reply data
 // for an AT command is multiplexed to the downstream.
@@ -1537,6 +1633,13 @@ void CDunAtCmdHandler::ManageCharacterChange( TUint aMode )
 TInt CDunAtCmdHandler::NotifyEndOfProcessing( TInt /*aError*/ )
     {
     FTRACE(FPrint( _L("CDunAtCmdHandler::NotifyEndOfProcessing()" ) ));
+    TBool editorMode = iCmdPusher->EditorMode();
+    if ( editorMode )
+        {
+        ManageEditorModeReply( ETrue );
+        FTRACE(FPrint( _L("CDunAtCmdHandler::NotifyEndOfProcessing() (editor) complete" ) ));
+        return KErrNone;
+        }
     HandleNextDecodedCommand();
     FTRACE(FPrint( _L("CDunAtCmdHandler::NotifyEndOfProcessing() complete" ) ));
     return KErrNone;
@@ -1568,6 +1671,19 @@ TBool CDunAtCmdHandler::NotifyNextCommandPeekRequest()
     TBool extracted = ExtractNextDecodedCommand( ETrue );
     FTRACE(FPrint( _L("CDunAtCmdHandler::NotifyNextCommandPeekRequest() complete") ));
     return extracted;
+    }
+
+// ---------------------------------------------------------------------------
+// From class MDunAtCmdPusher.
+// Notifies about editor mode reply
+// ---------------------------------------------------------------------------
+//
+TInt CDunAtCmdHandler::NotifyEditorModeReply()
+    {
+    FTRACE(FPrint( _L("CDunAtCmdHandler::NotifyEditorModeReply()") ));
+    TInt retVal = ManageEditorModeReply( EFalse );
+    FTRACE(FPrint( _L("CDunAtCmdHandler::NotifyEditorModeReply() complete") ));
+    return retVal;
     }
 
 // ---------------------------------------------------------------------------

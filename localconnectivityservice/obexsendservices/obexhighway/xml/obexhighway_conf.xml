@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>  
+<service>
+  <name>com.nokia.services.btsendservice</name>
+  <filepath>No path</filepath>
+  <description>BT Send Service</description>
+  <interface>
+     <name>imessage.send</name>
+     <version>1.0</version>
+     <description>Send interface</description>
+     <customproperty key="txt_aiw_action_text">Via Bluetooth</customproperty>
+  </interface>
+</service>

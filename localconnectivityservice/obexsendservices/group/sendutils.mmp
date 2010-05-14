@@ -49,6 +49,8 @@ SOURCE          BTSController.cpp
 
 USERINCLUDE     ../obexservicesendutils/inc
 SYSTEMINCLUDE  ../../inc ../../../inc /epoc32/include/libc
+SYSTEMINCLUDE  /epoc32/include/mw/hb/hbcore
+SYSTEMINCLUDE  /epoc32/include/mw/hb/hbwidgets
 MW_LAYER_SYSTEMINCLUDE
 
 LIBRARY         apgrfx.lib              // App Arch Session
@@ -72,6 +74,8 @@ LIBRARY         obexutils.lib           // Object Exchange UI services
 LIBRARY         caf.lib   				// DRM common
 LIBRARY         xmlframework.lib        // XML Framework
 LIBRARY			featmgr.lib				// Inquire supported static feature
+LIBRARY			HbCore.lib
+LIBRARY			HbWidgets.lib
 DEBUGLIBRARY    flogger.lib             // File logging services
 
 
