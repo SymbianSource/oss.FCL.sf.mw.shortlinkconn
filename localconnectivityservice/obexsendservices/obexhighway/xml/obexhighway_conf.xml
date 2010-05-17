@@ -8,5 +8,7 @@
      <version>1.0</version>
      <description>Send interface</description>
      <customproperty key="txt_aiw_action_text">Via Bluetooth</customproperty>
+    <customproperty key="aiw_action_text_file">bluetooth</customproperty>
+    <customproperty key="aiw_action_text">txt_send_via_bluetooth</customproperty>
   </interface>
 </service>

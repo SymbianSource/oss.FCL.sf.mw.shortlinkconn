@@ -160,11 +160,15 @@ void CBTSOPPController::Send()
     {
     FLOG(_L("[BTSS]\t CBTSOPPController::Send()"));
     
+    TInt error(KErrNone);
 
     if ( iListPtr->ObjectCount() > 0 && iFileIndex < iListPtr->ObjectCount() )
         {    
-        RArray<CObexHeader*> headerList; // the array does not need to be closed        
-        TRAPD( error, iClient->PutObjectL( headerList, iListPtr->ObjectAtL( iFileIndex ) ));
+        RArray<CObexHeader*> headerList; // the array does not need to be closed    
+
+        TRAP( error, {
+                UpdateProgressNoteL();
+                iClient->PutObjectL( headerList, iListPtr->ObjectAtL( iFileIndex ));  });
 
         if ( error )
             {
@@ -214,9 +218,22 @@ void CBTSOPPController::HandleConnectCompleteIndicationL()
                 }            
             }
         }
-    iObserverPtr->LaunchProgressNoteL( iClient, iListPtr->ObjectListSizeL() );
+    iObserverPtr->LaunchProgressNoteL( iClient, iListPtr->ObjectListSizeL(),iListPtr->ObjectCount() );
     iFileIndex = 0;
+    UpdateProgressNoteL();    
     Send();
+    }
+
+
+void CBTSOPPController::UpdateProgressNoteL()
+    {
+    TInt size;
+    RBuf filename;
+    iListPtr->ObjectAtL( iFileIndex ).Size(size);
+    filename.CreateL(255);
+    iListPtr->ObjectAtL( iFileIndex ).Name(filename);
+    iObserverPtr->UpdateProgressNoteL(size,iFileIndex,filename);
+    filename.Close();
     }
 
 //  End of File  

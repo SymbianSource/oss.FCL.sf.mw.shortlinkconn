@@ -36,7 +36,7 @@
 #include <btnotif.h>        	// Notifier UID's
 #include <aknnotewrappers.h> 	//For notifier
 #include <featmgr.h>
-#include <SecondaryDisplay/obexutilssecondarydisplayapi.h>
+#include <secondarydisplay/obexutilssecondarydisplayapi.h>
 
 // ================= MEMBER FUNCTIONS =======================
 

@@ -16,8 +16,8 @@
 */
 
 
-#ifndef BT_SENDING_SERVICE_DEBUG_H
-#define BT_SENDING_SERVICE_DEBUG_H
+#ifndef BTSENDINGSERVICEDEBUG_H
+#define BTSENDINGSERVICEDEBUG_H
 
 
 #ifdef _DEBUG
@@ -76,6 +76,6 @@ inline void FPrint(const TRefByValue<const TDesC> aFmt, ...)
 #endif // _DEBUG
 
 
-#endif // BT_SENDING_SERVICE_DEBUG_H
+#endif // BTSENDINGSERVICEDEBUG_H
 
 // End of File

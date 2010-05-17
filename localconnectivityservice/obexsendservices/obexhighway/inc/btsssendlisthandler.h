@@ -24,10 +24,9 @@
 #include <AiwVariantType.hrh>
 #include <AiwVariant.h>
 #include <AiwGenericParam.h>
-#include <QVariant.h>
-#include <QList.h>
-#include "BTSendingServiceDebug.h"
-
+#include <qvariant.h>
+#include <qlist.h>
+#include "btsendingservicedebug.h"
 
 class CBTServiceParameterList;
 

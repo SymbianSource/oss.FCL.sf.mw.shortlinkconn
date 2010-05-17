@@ -31,3 +31,4 @@ PRJ_EXPORTS
 ../inc/hidreportroot.h      MW_LAYER_PLATFORM_EXPORT_PATH(hidreportroot.h)
 ../inc/hidtranslate.h       MW_LAYER_PLATFORM_EXPORT_PATH(hidtranslate.h)
 ../inc/hidvalues.h          MW_LAYER_PLATFORM_EXPORT_PATH(hidvalues.h)
+../inc/hiddriverpluginuid.h MW_LAYER_PLATFORM_EXPORT_PATH(hiddriverpluginuid.h)

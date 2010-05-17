@@ -18,10 +18,6 @@
 PRJ_PLATFORMS
 DEFAULT
 
-PRJ_EXPORTS
-../inc/hidremconbearerinternalpskeys.h                   |../../../../inc/hidremconbearerinternalpskeys.h
-../inc/hidremconbearerscancodes.h                        |../../../../inc/hidremconbearerscancodes.h
-
 PRJ_MMPFILES
 hidremconbearer.mmp
 

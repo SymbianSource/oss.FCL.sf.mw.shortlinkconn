@@ -29,7 +29,9 @@
 #include <obexutilsmessagehandler.h>
 #include <btnotif.h>
 #include <featmgr.h>
-#include "hbdevicemessageboxsymbian.h"
+#include "BTSProgresstimer.h"
+#include <hbdevicenotificationdialogsymbian.h>
+#include <btservices/bluetoothdevicedialogs.h>
 
 // CONSTANTS
 
@@ -38,6 +40,10 @@ const TUint KBTServiceOPPSending        = 0x1105;
 const TUint KBTServiceDirectPrinting    = 0x1118;
 const TUint KBTServiceImagingResponder  = 0x111B;
 
+const TUint KBTProgressInterval         = 1000000;
+
+
+_LIT(KSendingDialog,"com.nokia.hb.btdevicedialog/1.0");
 
 // ============================ MEMBER FUNCTIONS ===============================
 
@@ -73,6 +79,9 @@ void CBTServiceStarter::ConstructL()
     FLOG(_L("[BTSU]\t CBTServiceStarter::ConstructL()"));
     iDevice = CBTDevice::NewL();
 //    iDialog = CObexUtilsDialog::NewL( this );
+    iDeviceDialog = CHbDeviceDialogSymbian::NewL();
+    iProgressDialog = CHbDeviceProgressDialogSymbian::NewL(CHbDeviceProgressDialogSymbian::EWaitDialog,this);
+    
     FeatureManager::InitializeLibL();
     iFeatureManagerInitialized = ETrue;
     FLOG(_L("[BTSU]\t CBTServiceStarter::ConstructL() completed"));
@@ -109,7 +118,12 @@ CBTServiceStarter::~CBTServiceStarter()
     delete iController;
     delete iBTEngDiscovery;
  //   delete iDialog;
+    delete iDeviceDialog;
     delete iProgressDialog;
+    if(iProgressTimer)
+        {
+        delete iProgressTimer;
+        }
 
     if(iWaiter && iWaiter->IsStarted() )
         {
@@ -245,6 +259,42 @@ TInt CBTServiceStarter::GetProgressStatus()
     else
         {
         return iBytesSendWithBIP;
+        }
+    }
+
+void CBTServiceStarter::UpdateProgressInfoL()
+    {
+    HBufC* key = HBufC::NewL(50);
+    CleanupStack::PushL(key);
+   
+    HBufC* value = HBufC::NewL(50);
+    CleanupStack::PushL(value);
+    
+    CHbSymbianVariantMap* map = CHbSymbianVariantMap::NewL();
+    CleanupStack::PushL(map);
+    
+    TInt progress = GetProgressStatus();
+    
+    key->Des().Copy(_L("progressValue"));
+    CHbSymbianVariant* progressvalue = CHbSymbianVariant::NewL(&progress, CHbSymbianVariant::EInt);
+    map->Add(*key,progressvalue);
+    
+    key->Des().Copy(_L("currentFileIdx"));
+    value->Des().AppendNum(iFileIndex);
+    CHbSymbianVariant* currentFileIdx = CHbSymbianVariant::NewL(value, CHbSymbianVariant::EDes);
+    map->Add(*key,currentFileIdx);
+
+    
+    TInt ret = iDeviceDialog->Update(*map);
+    
+    CleanupStack::PopAndDestroy(map);
+    CleanupStack::PopAndDestroy(value);            
+    CleanupStack::PopAndDestroy(key);
+    
+    
+    if ( iProgressTimer )
+        {
+        iProgressTimer->Tickle();
         }
     }
 
@@ -432,7 +482,6 @@ void CBTServiceStarter::LaunchWaitNoteL()
         {
         //       iDialog->LaunchWaitDialogL( R_BT_CONNECTING_WAIT_NOTE );
         _LIT(KConnectText, "Connecting...");
-        iProgressDialog = CHbDeviceProgressDialogSymbian::NewL(CHbDeviceProgressDialogSymbian::EWaitDialog,this);
         iProgressDialog->SetTextL(KConnectText);
         iProgressDialog->ShowL();
         
@@ -467,22 +516,45 @@ void CBTServiceStarter::CancelWaitNote()
 // -----------------------------------------------------------------------------
 //
 void CBTServiceStarter::LaunchProgressNoteL( MBTServiceProgressGetter* aGetter,
-                                             TInt aTotalSize )
+                                             TInt aTotalSize, TInt aFileCount)
     {
     FLOG(_L("[BTSU]\t CBTServiceStarter::LaunchProgressNoteL()"));
     (void) aTotalSize;
     
     if ( iService != EBTPrintingService )
         {    
-        iProgressGetter = aGetter;        
+        iProgressGetter = aGetter;     
         CancelWaitNote();        
         
         if ( !iProgressDialogActive )
         	{
+            iFileCount = aFileCount;
         	iMessageServerIndex = TObexUtilsMessageHandler::CreateOutboxEntryL( 
             KUidMsgTypeBt, R_BT_SEND_OUTBOX_SENDING );        
    //     	iDialog->LaunchProgressDialogL( this, aTotalSize, 
      //        								R_BT_SENDING_DATA, KBTProgressInterval );	
+            CHbSymbianVariantMap* map = CHbSymbianVariantMap::NewL();
+            CleanupStack::PushL(map);
+            if ( iProgressTimer )
+                {
+                iProgressTimer->Cancel();
+                delete iProgressTimer;
+                iProgressTimer = NULL;
+                }
+
+            iProgressTimer = CBTSProgressTimer::NewL( this );
+            iProgressTimer->SetTimeout( KBTProgressInterval );
+            
+            iProgressTimer->Tickle();
+
+            CHbSymbianVariant* value = NULL;
+            TBuf<6> key;
+            TInt data = TBluetoothDialogParams::ESend;
+            key.Num(TBluetoothDialogParams::EDialogType);
+            value = CHbSymbianVariant::NewL( (TAny*) &data, CHbSymbianVariant::EInt );
+            User::LeaveIfError(map->Add( key, value ));   // Takes ownership of value
+            iDeviceDialog->Show(KSendingDialog(),*map,this);
+            CleanupStack::PopAndDestroy(map);
         	}        
         iProgressDialogActive=ETrue;     
         }
@@ -490,6 +562,77 @@ void CBTServiceStarter::LaunchProgressNoteL( MBTServiceProgressGetter* aGetter,
     FLOG(_L("[BTSU]\t CBTServiceStarter::LaunchProgressNoteL() completed"));
     }
 
+void CBTServiceStarter::UpdateProgressNoteL(TInt aFileSize,TInt aFileIndex, const TDesC& aFileName )
+    {
+    HBufC* key = HBufC::NewL(50);
+    CleanupStack::PushL(key);
+   
+    HBufC* value = HBufC::NewL(50);
+    CleanupStack::PushL(value);
+    
+    CHbSymbianVariantMap* map = CHbSymbianVariantMap::NewL();
+    CleanupStack::PushL(map);
+    
+    iFileIndex = aFileIndex+1;
+    key->Des().Copy(_L("currentFileIdx"));
+    value->Des().AppendNum(aFileIndex+1);
+    CHbSymbianVariant* currentFileIdx = CHbSymbianVariant::NewL(value, CHbSymbianVariant::EDes);
+    map->Add(*key,currentFileIdx);
+    
+    key->Des().Copy(_L("totalFilesCnt"));
+    value->Des().Zero();
+    value->Des().AppendNum(iFileCount);
+    CHbSymbianVariant* totalFilesCnt = CHbSymbianVariant::NewL(value, CHbSymbianVariant::EDes);
+    map->Add(*key,totalFilesCnt);
+
+    
+    key->Des().Copy(_L("destinationName"));
+    if ( iDevice->IsValidFriendlyName() )
+        {
+        value->Des().Copy( iDevice->FriendlyName() );
+        }
+    else 
+        {
+        value->Des().Copy( BTDeviceNameConverter::ToUnicodeL(iDevice->DeviceName()));
+        }
+
+    CHbSymbianVariant* destinationName = CHbSymbianVariant::NewL(value, CHbSymbianVariant::EDes);
+    map->Add(*key,destinationName);
+    
+    key->Des().Copy(_L("fileName"));
+    value->Des().Copy(aFileName);
+    CHbSymbianVariant* fileName = CHbSymbianVariant::NewL(value, CHbSymbianVariant::EDes);
+    map->Add(*key,fileName);
+    
+    key->Des().Copy(_L("fileSzTxt"));
+    value->Des().Zero();
+    if(aFileSize < 1024)
+        {
+        value->Des().AppendNum(aFileSize);
+        value->Des().Append(_L(" Bytes"));
+        }
+    else
+        {
+        TInt filesize =  aFileSize/1024;
+        value->Des().AppendNum(filesize);
+        value->Des().Append(_L(" KB"));
+        }
+
+    CHbSymbianVariant* fileSzTxt = CHbSymbianVariant::NewL(value, CHbSymbianVariant::EDes);
+    map->Add(*key,fileSzTxt);
+    
+    
+    key->Des().Copy(_L("fileSz"));
+    CHbSymbianVariant* fileSz = CHbSymbianVariant::NewL(&aFileSize, CHbSymbianVariant::EInt);
+    map->Add(*key,fileSz);
+
+
+    
+    TInt ret = iDeviceDialog->Update(*map);
+    CleanupStack::PopAndDestroy(map);
+    CleanupStack::PopAndDestroy(value);            
+    CleanupStack::PopAndDestroy(key);
+    }
 // -----------------------------------------------------------------------------
 // CBTServiceStarter::CancelProgressNote
 // -----------------------------------------------------------------------------
@@ -501,7 +644,17 @@ void CBTServiceStarter::CancelProgressNote()
  //   if ( iDialog )
         {
   //      TRAP_IGNORE( iDialog->CancelProgressDialogL() );
+    if ( iProgressTimer )
+         {
+         iProgressTimer->Cancel();
+         delete iProgressTimer;
+         iProgressTimer = NULL;
+         }
         }
+    if(iDeviceDialog)
+         {
+         iDeviceDialog->Cancel();
+         }
     }
 
 // -----------------------------------------------------------------------------
@@ -549,7 +702,7 @@ void CBTServiceStarter::ShowNote( TInt aReason ) const
         {
         case EBTSNoError:
             {
-            if ( iService == EBTPrintingService )
+    /*        if ( iService == EBTPrintingService )
                 {
                // resource = R_BT_DATA_SENT2;
                 
@@ -558,10 +711,20 @@ void CBTServiceStarter::ShowNote( TInt aReason ) const
                 }
             else
                 {
-                //resource = R_BT_DATA_SENT;
-                _LIT(KText, "Data Sent");
+                //resource = R_BT_DATA_SENT;*/
+                _LIT(KText, "All files Sent to ");
                 buf.Copy(KText);
-                }
+                if ( iDevice->IsValidFriendlyName() )
+                    {
+                    buf.Append( iDevice->FriendlyName() );
+                    }
+                else 
+                    {
+                   TRAP_IGNORE( buf.Append( BTDeviceNameConverter::ToUnicodeL(iDevice->DeviceName())));
+                    }
+
+
+//                }
             break;
             }
         case EBTSConnectingFailed:
@@ -635,7 +798,8 @@ void CBTServiceStarter::ShowNote( TInt aReason ) const
         }        
     
 //	TRAP_IGNORE(TObexUtilsUiLayer::ShowInformationNoteL( resource ) );	
-    CHbDeviceMessageBoxSymbian::InformationL(buf);
+//    CHbDeviceMessageBoxSymbian::InformationL(buf);
+      TRAP_IGNORE(CHbDeviceNotificationDialogSymbian::NotificationL(KNullDesC, buf, KNullDesC));
     FLOG(_L("[BTSU]\t CBTServiceStarter::ShowNote() completed"));
     }
 
@@ -1073,4 +1237,44 @@ void CBTServiceStarter::ProgressDialogCancelled(const CHbDeviceProgressDialogSym
 
 void CBTServiceStarter::ProgressDialogClosed(const CHbDeviceProgressDialogSymbian* /* aDialog*/)
     {
+    }
+
+
+void CBTServiceStarter::DataReceived(CHbSymbianVariantMap& /*aData*/)
+    {
+    
+    }
+
+
+void CBTServiceStarter::DeviceDialogClosed(TInt /* aCompletionCode*/)
+    {
+    TBuf<255> buf;
+    _LIT(KText, "Sending Cancelled to ");
+    buf.Copy(KText);
+    if ( iDevice->IsValidFriendlyName() )
+        {
+        buf.Append( iDevice->FriendlyName() );
+        }
+    else 
+        {
+        TRAP_IGNORE(buf.Append( BTDeviceNameConverter::ToUnicodeL(iDevice->DeviceName())));
+        }
+
+    iUserCancel=ETrue;
+    if ( iController )
+        {
+        iController->Abort();
+        }
+    else 
+       {
+       StopTransfer(KErrCancel);
+       }    
+    
+    if ( iProgressTimer )
+        {
+        iProgressTimer->Cancel();
+        delete iProgressTimer;
+        iProgressTimer = NULL;
+        }
+    TRAP_IGNORE(CHbDeviceNotificationDialogSymbian::NotificationL(KNullDesC, buf, KNullDesC));
     }

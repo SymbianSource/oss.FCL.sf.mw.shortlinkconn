@@ -377,8 +377,12 @@ void CDunAtCmdHandler::Initialize()
     iCommand = NULL;
     iDecodeInfo.iFirstDecode = ETrue;
     iDecodeInfo.iDecodeIndex = KErrNotFound;
+    iDecodeInfo.iExtendedIndex = KErrNotFound;
     iDecodeInfo.iPrevChar = 0;
     iDecodeInfo.iPrevExists = EFalse;
+    iDecodeInfo.iAssignFound = EFalse;
+    iDecodeInfo.iInQuotes = EFalse;
+    iDecodeInfo.iSpecialFound = EFalse;
     iEditorModeInfo.iContentFound = EFalse;
     iCmdPusher = NULL;
     iEcomListen = NULL;
@@ -882,11 +886,8 @@ TBool CDunAtCmdHandler::ExtractNextDecodedCommand( TBool aPeek )
     TDunDecodeInfo oldInfo = iDecodeInfo;
     iDecodeInfo.iDecodeBuffer.Zero();
     // Find start of decode command from input buffer
-    TBool extendedCmd = EFalse;
     TInt startIndex = iDecodeInfo.iDecodeIndex;
-    startIndex = FindStartOfDecodedCommand( iInputBuffer,
-                                            startIndex,
-                                            extendedCmd );
+    startIndex = FindStartOfDecodedCommand( iInputBuffer, startIndex );
     if ( startIndex < 0 )
         {
         RestoreOldDecodeInfo( aPeek, oldInfo );
@@ -894,24 +895,12 @@ TBool CDunAtCmdHandler::ExtractNextDecodedCommand( TBool aPeek )
         return EFalse;
         }
     // Find end of decode command from input buffer
-    TBool extendedEnd = EFalse;
-    TBool oneCharCmd = EFalse;
     TBool specialCmd = EFalse;
     TInt endIndex = KErrNotFound;
-    if ( extendedCmd )
+    specialCmd = CheckSpecialCommand( startIndex, endIndex );
+    if ( !specialCmd )
         {
-        if( iAtSpecialCmdHandler->IsCompleteSubCommand(iInputBuffer, startIndex, endIndex) == EFalse )
-            {
-            extendedEnd = CheckExtendedCommand( startIndex, endIndex );
-            }
-        }
-    else
-        {
-        specialCmd = CheckSpecialCommand( startIndex, endIndex );
-        if ( !specialCmd )
-            {
-            CheckBasicCommand( startIndex, endIndex, oneCharCmd );
-            }
+        FindSubCommand( startIndex, endIndex );
         }
     if ( endIndex < startIndex )
         {
@@ -926,7 +915,7 @@ TBool CDunAtCmdHandler::ExtractNextDecodedCommand( TBool aPeek )
         iParseInfo.iLimit = cmdLength;
         }
     // Next create a new command
-    if ( !iDecodeInfo.iFirstDecode && !oneCharCmd && !specialCmd )
+    if ( !iDecodeInfo.iFirstDecode && !specialCmd )
         {
         _LIT( KAtMsg, "AT" );
         iDecodeInfo.iDecodeBuffer.Append( KAtMsg );
@@ -939,10 +928,6 @@ TBool CDunAtCmdHandler::ExtractNextDecodedCommand( TBool aPeek )
     // Set index for next round
     iDecodeInfo.iFirstDecode = EFalse;
     iDecodeInfo.iDecodeIndex = endIndex + 1;
-    if ( extendedEnd )  // skip the extra ';'
-        {
-        iDecodeInfo.iDecodeIndex++;
-        }
     RestoreOldDecodeInfo( aPeek, oldInfo );
     FTRACE(FPrint( _L("CDunAtCmdHandler::ExtractNextDecodedCommand() complete") ));
     return ETrue;
@@ -1008,35 +993,19 @@ TBool CDunAtCmdHandler::IsEndOfCommand( TChar& aCharacter )
 // ---------------------------------------------------------------------------
 //
 TInt CDunAtCmdHandler::FindStartOfDecodedCommand( TDesC8& aDes,
-                                                  TInt aStartIndex,
-                                                  TBool& aExtended )
+                                                  TInt aStartIndex )
     {
     FTRACE(FPrint( _L("CDunAtCmdHandler::FindStartOfDecodedCommand()") ));
-    aExtended = EFalse;
     TInt i;
     TInt count = aDes.Length();
     for ( i=aStartIndex; i<count; i++ )
         {
         TChar character = aDes[i];
-        if ( IsDelimiterCharacter(character) && !IsOneCharacterCommand(i) )
+        if ( !IsDelimiterCharacter(character) )
             {
-            continue;
+            FTRACE(FPrint( _L("CDunAtCmdHandler::FindStartOfDecodedCommand() complete (%d)"), i ));
+            return i;
             }
-        if ( !iDecodeInfo.iFirstDecode && IsExtendedCharacter(character) )
-            {
-            aExtended = ETrue;
-            }
-        else if ( iDecodeInfo.iFirstDecode && i+2<count )
-            {
-            // i+2 is the position of '+' in "AT+" and other similar sets
-            character = aDes[i+2];
-            if ( IsExtendedCharacter(character) )
-                {
-                aExtended = ETrue;
-                }
-            }
-        FTRACE(FPrint( _L("CDunAtCmdHandler::FindStartOfDecodedCommand() complete (%d)"), i ));
-        return i;
         }
     FTRACE(FPrint( _L("CDunAtCmdHandler::FindStartOfDecodedCommand() (not found) complete") ));
     return KErrNotFound;
@@ -1074,63 +1043,6 @@ TBool CDunAtCmdHandler::IsExtendedCharacter( TChar aCharacter )
         }
     FTRACE(FPrint( _L("CDunAtCmdHandler::IsExtendedCharacter() (not extended) complete") ));
     return EFalse;
-    }
-
-// ---------------------------------------------------------------------------
-// Checks extended command
-// ---------------------------------------------------------------------------
-//
-TBool CDunAtCmdHandler::CheckExtendedCommand( TInt aStartIndex, TInt& aEndIndex )
-    {
-    FTRACE(FPrint( _L("CDunAtCmdHandler::CheckExtendedCommand()") ));
-    iDecodeInfo.iPrevExists = EFalse;
-    TBool inQuotes = EFalse;
-    TBool endFound = EFalse;
-    TInt length = iInputBuffer.Length();
-    for ( aEndIndex=aStartIndex; aEndIndex<length; aEndIndex++ )
-        {
-        TChar character = iInputBuffer[aEndIndex];
-        if ( character == '"' )
-            {
-            if ( iDecodeInfo.iPrevExists && iParseInfo.iLimit<0 )
-                {
-                iParseInfo.iLimit = aEndIndex - aStartIndex;
-                }
-            inQuotes ^= ETrue;  // EFalse to ETrue or ETrue to EFalse
-            iDecodeInfo.iPrevExists = ETrue;
-            iDecodeInfo.iPrevChar = character;
-            continue;
-            }
-        if ( inQuotes )
-            {
-            continue;
-            }
-        // The next ones are those that are not in quotes
-        if ( character == '=' && iParseInfo.iLimit<0 )
-            {
-            iParseInfo.iLimit = aEndIndex - aStartIndex;
-            }
-        if ( IsDelimiterCharacter(character) )
-            {
-            endFound = ETrue;
-            break;
-            }
-        if( IsExtendedCharacter(character) && (aEndIndex != aStartIndex) && iDecodeInfo.iPrevExists )
-            {
-            if( iDecodeInfo.iPrevChar.IsAlphaDigit() )
-                {
-                aEndIndex--;
-                // End found but return EFalse in order to calling function can proceed correct way,
-                // no extended end.
-                return EFalse;
-                }
-            }
-        iDecodeInfo.iPrevExists = ETrue;
-        iDecodeInfo.iPrevChar = character;
-        }
-    aEndIndex--;
-    FTRACE(FPrint( _L("CDunAtCmdHandler::CheckExtendedCommand() complete") ));
-    return endFound;
     }
 
 // ---------------------------------------------------------------------------
@@ -1175,152 +1087,230 @@ TBool CDunAtCmdHandler::CheckSpecialCommand( TInt aStartIndex,
     }
 
 // ---------------------------------------------------------------------------
-// Checks extended command
+// Saves character decode state for a found character
 // ---------------------------------------------------------------------------
 //
-TInt CDunAtCmdHandler::CheckBasicCommand( TInt aStartIndex,
-                                          TInt& aEndIndex,
-                                          TBool& aOneCharCmd )
+void CDunAtCmdHandler::SaveFoundCharDecodeState( TChar aCharacter,
+                                                 TBool aAddSpecial )
     {
-    FTRACE(FPrint( _L("CDunAtCmdHandler::CheckBasicCommand()") ));
-    aEndIndex = aStartIndex;
-    aOneCharCmd = EFalse;
-    TBool inQuotes = EFalse;
-    TInt length = iInputBuffer.Length();
-    iDecodeInfo.iPrevExists = EFalse;
-    if ( aStartIndex < length )
+    FTRACE(FPrint( _L("CDunAtCmdHandler::SaveFoundCharDecodeState()") ));
+    iDecodeInfo.iPrevExists = ETrue;
+    iDecodeInfo.iPrevChar = aCharacter;
+    if ( aAddSpecial )
         {
-        TChar character = iInputBuffer[aStartIndex];
-        if ( IsOneCharacterCommand(aStartIndex) )
-            {
-            aOneCharCmd = ETrue;
-            // Without "endIndex++" here
-            FTRACE(FPrint( _L("CDunAtCmdHandler::CheckBasicCommand() (X) complete") ));
-            return KErrNone;
-            }
+        iDecodeInfo.iSpecialFound =
+                iAtSpecialCmdHandler->IsCompleteSubCommand( aCharacter );
         }
+    FTRACE(FPrint( _L("CDunAtCmdHandler::SaveFoundCharDecodeState() complete") ));
+    }
+
+// ---------------------------------------------------------------------------
+// Saves character decode state for a not found character
+// ---------------------------------------------------------------------------
+//
+void CDunAtCmdHandler::SaveNotFoundCharDecodeState()
+    {
+    FTRACE(FPrint( _L("CDunAtCmdHandler::SaveNotFoundCharDecodeState()") ));
+    iDecodeInfo.iPrevExists = EFalse;
+    // Note: don't set iAssignFound or iInQuotes here
+    iDecodeInfo.iSpecialFound = EFalse;
+    FTRACE(FPrint( _L("CDunAtCmdHandler::SaveNotFoundCharDecodeState() complete") ));
+    }
+
+// ---------------------------------------------------------------------------
+// Find quotes within subcommands
+// ---------------------------------------------------------------------------
+//
+TBool CDunAtCmdHandler::FindSubCommandQuotes( TChar aCharacter,
+                                              TInt aStartIndex,
+                                              TInt& aEndIndex )
+    {
+    FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommandQuotes()") ));
+    if ( aCharacter == '"' )
+        {
+        if ( iParseInfo.iLimit < 0 )  // Only first the first '"'
+            {
+            iParseInfo.iLimit = aEndIndex - aStartIndex;
+            }
+        iDecodeInfo.iInQuotes ^= ETrue;  // EFalse to ETrue or ETrue to EFalse
+        SaveFoundCharDecodeState( aCharacter, EFalse );
+        FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommandQuotes() (quote) complete") ));
+        return ETrue;
+        }
+    // The next ones are those that are not in quotes.
+    // We still need to save the iParseInfo.iLimit and skip non-delimiter characters.
+    if ( aCharacter == '=' )
+        {
+        if ( iParseInfo.iLimit < 0 )  // Only first the first '"'
+            {
+            iParseInfo.iLimit = aEndIndex - aStartIndex;
+            }
+        iDecodeInfo.iAssignFound = ETrue;
+        SaveFoundCharDecodeState( aCharacter, EFalse );
+        FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommandQuotes() (equals) complete") ));
+        return ETrue;
+        }
+    if ( iDecodeInfo.iInQuotes )
+        {
+        SaveNotFoundCharDecodeState();
+        FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommandQuotes() (in quotes) complete") ));
+        return ETrue;
+        }
+    FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommandQuotes() (not found) complete") ));
+    return EFalse;
+    }
+
+// ---------------------------------------------------------------------------
+// Check if in next subcommand's extended border
+// ---------------------------------------------------------------------------
+//
+TBool CDunAtCmdHandler::IsExtendedBorder( TChar aCharacter,
+                                          TInt aStartIndex,
+                                          TInt& aEndIndex )
+    {
+    FTRACE(FPrint( _L("CDunAtCmdHandler::IsExtendedBorder()") ));
+    TInt expectedIndex = 0;  // "+CMD" when iDecodeInfo.iFirstDecode is EFalse
+    TInt extendedIndex = aEndIndex - aStartIndex;  // absolute index to the extended character
+    if ( iDecodeInfo.iFirstDecode )
+        {
+        expectedIndex = 2;  // "AT+CMD"
+        }
+    if ( extendedIndex == expectedIndex )
+        {
+        iDecodeInfo.iExtendedIndex = aEndIndex;
+        SaveFoundCharDecodeState( aCharacter );
+        FTRACE(FPrint( _L("CDunAtCmdHandler::IsExtendedBorder() (no border) complete") ));
+        return EFalse;
+        }
+    aEndIndex--;
+    FTRACE(FPrint( _L("CDunAtCmdHandler::IsExtendedBorder() (border) complete") ));
+    return ETrue;
+    }
+
+// ---------------------------------------------------------------------------
+// Finds subcommand with alphanumeric borders
+// ---------------------------------------------------------------------------
+//
+TBool CDunAtCmdHandler::FindSubCommandAlphaBorder( TChar aCharacter,
+                                                   TInt& aEndIndex )
+    {
+    FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommandAlphaBorder()") ));
+    if ( iDecodeInfo.iAssignFound && !iDecodeInfo.iInQuotes )
+        {
+        // Check the special case when assigning a number with "basic" command
+        // and there is no delimiter after it. In this case <Numeric>|<Alpha>
+        // border must be detected but only for a "basic" command, not for
+        // extended.
+        if ( iDecodeInfo.iExtendedIndex<0    && iDecodeInfo.iPrevExists &&
+             iDecodeInfo.iPrevChar.IsDigit() && aCharacter.IsAlpha() )
+            {
+            aEndIndex--;
+            FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommandAlphaBorder() (N|A) complete") ));
+            return ETrue;
+            }
+        // The code below is for the following type of cases:
+        // (do not check alphanumeric borders if "=" set without quotes):
+        // AT+CMD=a
+        FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommandAlphaBorder() (skip) complete") ));
+        return EFalse;
+        }
+    if ( !iDecodeInfo.iPrevExists || !aCharacter.IsAlpha() )
+        {
+        FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommandAlphaBorder() (not found) complete") ));
+        return EFalse;
+        }
+    if ( iDecodeInfo.iPrevChar.IsAlpha() )
+        {
+        // The check below detects the following type of cases
+        // (note that special handling is needed to separate the Alpha|Alpha boundary):
+        // AT&FE0
+        if ( iDecodeInfo.iSpecialFound )
+            {
+            // Special command was found before and this is Alpha|Alpha boundary -> end
+            aEndIndex--;
+            FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommandAlphaBorder() (special) complete") ));
+            return ETrue;
+            }
+        // The code below is for the following type of cases
+        // (note there is no border between C|M, for example -> continue):
+        // ATCMD
+        FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommandAlphaBorder() (continue) complete") ));
+        return EFalse;
+        }
+    // The code below is for skipping the following type of cases:
+    // AT+CMD [the '+' must be skipped]
+    if ( aEndIndex-1 == iDecodeInfo.iExtendedIndex )
+        {
+        FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommandAlphaBorder() (extended) complete") ));
+        return EFalse;
+        }
+    // The code below is for the following type of cases:
+    // ATCMD?ATCMD
+    FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommandAlphaBorder() (boundary) complete") ));
+    aEndIndex--;
+    return ETrue;
+    }
+
+// ---------------------------------------------------------------------------
+// Finds subcommand
+// ---------------------------------------------------------------------------
+//
+TInt CDunAtCmdHandler::FindSubCommand( TInt aStartIndex, TInt& aEndIndex )
+    {
+    FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommand()") ));
+    aEndIndex = aStartIndex;
+    TBool found = EFalse;
+    TInt length = iInputBuffer.Length();
+    iDecodeInfo.iAssignFound = EFalse;
+    iDecodeInfo.iInQuotes = EFalse;
+    iDecodeInfo.iExtendedIndex = KErrNotFound;
+    SaveNotFoundCharDecodeState();
+    iAtSpecialCmdHandler->ResetComparisonBuffer();  // just to be sure
     for ( ; aEndIndex<length; aEndIndex++ )
         {
         TChar character = iInputBuffer[aEndIndex];
-        if ( character == '"' )
-            {
-            if ( iDecodeInfo.iPrevExists && iParseInfo.iLimit<0 )
-                {
-                iParseInfo.iLimit = aEndIndex - aStartIndex;
-                }
-            inQuotes ^= ETrue;  // EFalse to ETrue or ETrue to EFalse
-            iDecodeInfo.iPrevExists = ETrue;
-            iDecodeInfo.iPrevChar = character;
-            continue;
-            }
-        if ( inQuotes )
+        found = FindSubCommandQuotes( character, aStartIndex, aEndIndex );
+        if ( found )
             {
             continue;
             }
         if ( character == '?' )
             {
-            FTRACE(FPrint( _L("CDunAtCmdHandler::CheckBasicCommand() (?) complete") ));
+            FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommand() (?) complete") ));
             return KErrNone;
             }
-        if ( character.IsSpace() || IsExtendedCharacter(character) )
+        // The check below detects the following type of cases:
+        // ATCMD<delimiter>
+        if ( IsDelimiterCharacter(character) )
             {
             aEndIndex--;
-            FTRACE(FPrint( _L("CDunAtCmdHandler::CheckBasicCommand() (S or extended) complete") ));
+            FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommand() (delimiter) complete") ));
             return KErrNone;
             }
-        if ( !iDecodeInfo.iPrevExists )
+        // The check below detects the following type of cases:
+        // ATCMD+CMD [first + as delimiter]
+        // AT+CMD+CMD [second + as delimiter]
+        if ( IsExtendedCharacter(character) )
             {
-            iDecodeInfo.iPrevExists = ETrue;
-            iDecodeInfo.iPrevChar = character;
-            continue;
-            }
-        if ( IsOneCharacterCommand(aEndIndex) )
-            {
-            aEndIndex--;
-            FTRACE(FPrint( _L("CDunAtCmdHandler::CheckBasicCommand() (one char) complete") ));
+            found = IsExtendedBorder( character, aStartIndex, aEndIndex );
+            if ( !found )
+                {
+                continue;
+                }
+            FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommand() (extended) complete") ));
             return KErrNone;
             }
-        if ( character.IsAlpha() && !iDecodeInfo.iPrevChar.IsAlpha() )
+        found = FindSubCommandAlphaBorder( character, aEndIndex );
+        if ( found )
             {
-            aEndIndex--;
-            FTRACE(FPrint( _L("CDunAtCmdHandler::CheckBasicCommand() (boundary) complete") ));
+            FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommand() (alpha sub) complete") ));
             return KErrNone;
             }
-        iDecodeInfo.iPrevExists = ETrue;
-        iDecodeInfo.iPrevChar = character;
+        SaveFoundCharDecodeState( character );
         }
     aEndIndex--;
-    FTRACE(FPrint( _L("CDunAtCmdHandler::CheckBasicCommand() (not found) complete") ));
+    FTRACE(FPrint( _L("CDunAtCmdHandler::FindSubCommand() (not found) complete") ));
     return KErrNotFound;
-    }
-
-// ---------------------------------------------------------------------------
-// Check if any one character command
-// ---------------------------------------------------------------------------
-//
-TBool CDunAtCmdHandler::IsOneCharacterCommand( TInt aIndex )
-    {
-    FTRACE(FPrint( _L("CDunAtCmdHandler::IsOneCharacterCommand()") ));
-    if ( aIndex<0 || aIndex>=iInputBuffer.Length() )
-        {
-        FTRACE(FPrint( _L("CDunAtCmdHandler::IsOneCharacterCommand() (index out of bounds) complete") ));
-        return EFalse;
-        }
-    TChar character = iInputBuffer[aIndex];
-    if ( character==',' || character==';' || character=='@'  || character=='!' ||
-         IsOneCharacterACommand(aIndex) )
-        {
-        FTRACE(FPrint( _L("CDunAtCmdHandler::IsOneCharacterCommand() complete") ));
-        return ETrue;
-        }
-    FTRACE(FPrint( _L("CDunAtCmdHandler::IsOneCharacterCommand() (not found) complete") ));
-    return EFalse;
-    }
-
-// ---------------------------------------------------------------------------
-// Check if one character "A" command
-// ---------------------------------------------------------------------------
-//
-TBool CDunAtCmdHandler::IsOneCharacterACommand( TInt aIndex )
-    {
-    FTRACE(FPrint( _L("CDunAtCmdHandler::IsOneCharacterACommand()") ));
-    if ( aIndex<0 || aIndex>=iInputBuffer.Length() )
-        {
-        FTRACE(FPrint( _L("CDunAtCmdHandler::IsOneCharacterACommand() (index out of bounds) complete") ));
-        return EFalse;
-        }
-    if ( iInputBuffer[aIndex]!='a' && iInputBuffer[aIndex]!='A' )
-        {
-        FTRACE(FPrint( _L("CDunAtCmdHandler::IsOneCharacterACommand() (not found) complete") ));
-        return EFalse;
-        }
-    TBool prevAlpha = EFalse;
-    TBool nextAlpha = EFalse;
-    TBool nextSlash = EFalse;
-    TInt length = iInputBuffer.Length();
-    if ( iDecodeInfo.iPrevExists && iDecodeInfo.iPrevChar.IsAlpha() )
-        {
-        prevAlpha = ETrue;
-        }
-    if ( aIndex+1 < length )
-        {
-        TChar nextChar = iInputBuffer[aIndex+1];
-        if ( nextChar.IsAlpha() )
-            {
-            nextAlpha = ETrue;
-            }
-        if ( nextChar == '/' )
-            {
-            nextSlash = ETrue;
-            }
-        }
-    if ( prevAlpha || nextAlpha || nextSlash )
-        {
-        FTRACE(FPrint( _L("CDunAtCmdHandler::IsOneCharacterACommand() (not found) complete") ));
-        return EFalse;
-        }
-    FTRACE(FPrint( _L("CDunAtCmdHandler::IsOneCharacterACommand() (complete) complete") ));
-    return ETrue;
     }
 
 // ---------------------------------------------------------------------------

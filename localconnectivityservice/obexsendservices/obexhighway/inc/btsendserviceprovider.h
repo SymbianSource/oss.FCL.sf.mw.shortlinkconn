@@ -20,8 +20,8 @@
 #define BTSENDSERVICEPROVIDER_H
 
 #include <e32base.h>
-#include <QList.h>
-#include <QVariant.h>
+#include <qlist.h>
+#include <qvariant.h>
 
 class CBTServiceAPI;
 class CBTSSSendListHandler;

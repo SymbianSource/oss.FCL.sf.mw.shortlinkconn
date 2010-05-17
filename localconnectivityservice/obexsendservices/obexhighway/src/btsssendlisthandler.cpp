@@ -19,12 +19,10 @@
 
 #include <AiwGenericParam.h>
 
-#include "BTSSSendListHandler.h"
-#include "btserviceparameterlist.h"
+#include "btsssendlisthandler.h"
+#include "BTServiceParameterList.h"
 
 #include <xqconversions.h>
-
-
 
 // ======== MEMBER FUNCTIONS ========
 

@@ -403,7 +403,8 @@ TInt CBTServiceClient::GetProgressStatus()
 
     FTRACE(FPrint(_L("[BTSU]\t CBTServiceClient::GetProgressStatus() completed, bytes sent %d"), iTotalBytesSent + bytesSent ) );
 
-    return iTotalBytesSent + bytesSent;
+   // return iTotalBytesSent + bytesSent;
+    return bytesSent;
     }
 
 // -----------------------------------------------------------------------------

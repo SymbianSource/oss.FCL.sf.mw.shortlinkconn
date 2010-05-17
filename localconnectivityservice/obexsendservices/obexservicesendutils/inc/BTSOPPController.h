@@ -119,6 +119,8 @@ NONSHARABLE_CLASS (CBTSOPPController) : public CBTSController,
         * @return None.
         */
         void HandleConnectCompleteIndicationL();
+        
+        void UpdateProgressNoteL();
 
     private:    // Data
         

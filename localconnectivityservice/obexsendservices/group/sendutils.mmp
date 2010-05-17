@@ -46,12 +46,14 @@ SOURCE          BTSURefObjectResolver.cpp
 SOURCE          BTSUXmlParser.cpp
 SOURCE          BTConnectionTimer.cpp
 SOURCE          BTSController.cpp
+SOURCE          BTSProgresstimer.cpp
 
 USERINCLUDE     ../obexservicesendutils/inc
 SYSTEMINCLUDE  ../../inc ../../../inc /epoc32/include/libc
 SYSTEMINCLUDE  /epoc32/include/mw/hb/hbcore
 SYSTEMINCLUDE  /epoc32/include/mw/hb/hbwidgets
 MW_LAYER_SYSTEMINCLUDE
+
 
 LIBRARY         apgrfx.lib              // App Arch Session
 LIBRARY         apmime.lib              // App Arch Mime Recognizers

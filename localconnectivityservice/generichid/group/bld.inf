@@ -21,15 +21,6 @@ PRJ_PLATFORMS
 DEFAULT
 
 PRJ_EXPORTS
-../inc/hidgeneric.h                     |../../../inc/hidgeneric.h
-../inc/hidinterfaces.h                  |../../../inc/hidinterfaces.h
-../inc/hidtranslate.h                   |../../../inc/hidtranslate.h
-../inc/hidreportroot.h                  |../../../inc/hidreportroot.h
-../inc/hidfield.h                       |../../../inc/hidfield.h
-../inc/hidcollection.h                  |../../../inc/hidcollection.h
-../inc/hidvalues.h                      |../../../inc/hidvalues.h
-../inc/hiddriverpluginuid.h             |../../../inc/hiddriverpluginuid.h
-
 ../rom/generichid.iby                   CORE_MW_LAYER_IBY_EXPORT_PATH(generichid.iby)
 
 PRJ_MMPFILES

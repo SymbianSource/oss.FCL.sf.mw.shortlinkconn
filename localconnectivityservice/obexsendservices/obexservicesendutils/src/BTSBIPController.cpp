@@ -235,7 +235,7 @@ void CBTSBIPController::GetCompleted( TInt aStatus,
         }
     else if( aStatus != KErrAbort && aGetResponse->BytesReceived()==0 )
         {
-        TRAPD( error,iObserverPtr->LaunchProgressNoteL( iClient, iListPtr->ImageListSize() ) );
+        TRAPD( error,iObserverPtr->LaunchProgressNoteL( iClient, iListPtr->ImageListSize(),iListPtr->ImageCount() ) );
         error=KErrNone;
         TRAP(error, SendL() );    	 
         if ( error != KErrNone )
@@ -290,14 +290,20 @@ void CBTSBIPController::SendL()
         //
         
         TBTSUImageParam imageparam = iListPtr->ImageAtL( iFileIndex );        
+        RBuf filename;
+        filename.CreateL(256);
+        CleanupClosePushL(filename);
+        imageparam.iFile.Name(filename);
         
+        iObserverPtr->UpdateProgressNoteL(imageparam.iFileSize,iFileIndex,filename);
+        CleanupStack::PopAndDestroy(&filename);
         
         iListPtr->MarkAsSendL(iFileIndex);
         
         
         iClient->PutObjectL( headerList, imageparam.iFile );
         
-
+          
         CleanupStack::Pop(4); // headerList, imageDescriptorHeader, typeHeader, imagedescriptor
         delete imagedescriptor;
         headerList.Close();
@@ -632,7 +638,7 @@ void CBTSBIPController::HandleGetCompleteIndicationL( CObexBufObject* aGetRespon
     		{
     		// Everything went ok. Start sending images
     		//
-    		iObserverPtr->LaunchProgressNoteL( iClient, iListPtr->ImageListSize() );
+    		iObserverPtr->LaunchProgressNoteL( iClient, iListPtr->ImageListSize(),iListPtr->ImageCount() );
     
 		    // Start sending images
     		//
@@ -651,7 +657,7 @@ void CBTSBIPController::HandleGetCompleteIndicationL( CObexBufObject* aGetRespon
             {
             // Everything went ok. Start sending the images
             //
-            iObserverPtr->LaunchProgressNoteL( iClient, iListPtr->ImageListSize() );
+            iObserverPtr->LaunchProgressNoteL( iClient, iListPtr->ImageListSize(),iListPtr->ImageCount() );
             
             // Start sending images
             //
@@ -660,10 +666,10 @@ void CBTSBIPController::HandleGetCompleteIndicationL( CObexBufObject* aGetRespon
         } 	
     else if( allSupported )  	
         {
-    	iObserverPtr->LaunchProgressNoteL( iClient, iListPtr->ImageListSize() + iListPtr->ObjectListSizeL());
+    	iObserverPtr->LaunchProgressNoteL( iClient, iListPtr->ImageListSize() + iListPtr->ObjectListSizeL(),iListPtr->ImageCount() + iListPtr->ObjectCount());
     
 	    // Start sending images
-    	//
+    	//   	
    		SendL();   		
     	}
     	
