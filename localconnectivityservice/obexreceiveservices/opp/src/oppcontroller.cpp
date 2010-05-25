@@ -31,7 +31,7 @@
 #include    <sysutil.h>
 #include    <btengdomaincrkeys.h> 
 #include    <msvids.h>
-#include    <DriveInfo.h> 
+#include    <driveinfo.h> 
 #include    <es_sock.h>
 #include    <bt_sock.h>
 

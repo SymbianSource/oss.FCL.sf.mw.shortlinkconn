@@ -20,7 +20,7 @@
 #include    "obexutilsdialog.h"
 #include    "obexutilsdialogtimer.h"
 #include    "obexutilsuilayer.h"
-#include    <SecondaryDisplay/obexutilssecondarydisplayapi.h>
+#include    <secondarydisplay/obexutilssecondarydisplayapi.h>
 #include    <aknnotewrappers.h>
 #include    <eikprogi.h>
 #include    <Obexutils.rsg>

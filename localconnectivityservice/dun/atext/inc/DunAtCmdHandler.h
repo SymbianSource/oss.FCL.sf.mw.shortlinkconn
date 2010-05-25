@@ -86,6 +86,11 @@ public:
     TInt iDecodeIndex;
 
     /**
+     * Index in iInputBuffer for extended character position 
+     */
+    TInt iExtendedIndex;
+
+    /**
      * Previous character in parsing
      */
     TChar iPrevChar;
@@ -95,6 +100,21 @@ public:
      */
     TBool iPrevExists;
 
+    /**
+     * Flag to indicate if assignment mark found
+     */
+    TBool iAssignFound;
+
+    /**
+     * Flag to indicate if processing inside quotes 
+     */
+    TBool iInQuotes;
+
+    /**
+     * Flag to indicate if special subcommand found
+     */
+    TBool iSpecialFound;
+    
     /**
      * Buffer for parsing
      */
@@ -519,12 +539,10 @@ private:
      * @since S60 5.0
      * @param aDes String descriptor
      * @param aStartIndex Start index for search
-     * @pram aExtended ETrue if extended command, EFalse otherwise
      * @return Index if found, KErrNotFound otherwise
      */
     TInt FindStartOfDecodedCommand( TDesC8& aDes,
-                                    TInt aStartIndex,
-                                    TBool& aExtended );
+                                    TInt aStartIndex );
 
     /**
      * Checks if character is delimiter character
@@ -545,16 +563,6 @@ private:
     TBool IsExtendedCharacter( TChar aCharacter );
 
     /**
-     * Checks extended command
-     *
-     * @since S60 5.0
-     * @param aStartIndex Start index (doesn't change)
-     * @param aEndIndex End index (changes)
-     * @return ETrue if end of extended found, EFalse otherwise
-     */
-    TBool CheckExtendedCommand( TInt aStartIndex, TInt& aEndIndex );
-
-    /**
      * Checks special command
      *
      * @since S60 5.0
@@ -566,36 +574,68 @@ private:
                                TInt& aEndIndex );
 
     /**
-     * Checks basic command
+     * Saves character decode state for a found character
      *
-     * @since S60 5.0
-     * @param aStartIndex Start index (doesn't change)
-     * @param aEndIndex End index (changes)
-     * @param aACmdFound ETrue if one character "A" command found,
-     *                   EFalse otherwise
+     * @since TB9.2
+     * @param aCharacter Character to save a state for
+     * @param aAddSpecial ETrue to add character for special command,
+     *                    EFalse otherwise
      * @return Symbian error code on error, KErrNone otherwise
      */
-    TInt CheckBasicCommand( TInt aStartIndex,
-                            TInt& aEndIndex,
-                            TBool& aOneCharCmd );
+    void SaveFoundCharDecodeState( TChar aCharacter,
+                                   TBool aAddSpecial=ETrue );
+    
+    /**
+     * Saves character decode state for a not found character
+     *
+     * @since TB9.2
+     * @param aStartIndex Start index (doesn't change)
+     * @param aEndIndex End index (changes)
+     * @return Symbian error code on error, KErrNone otherwise
+     */
+    void SaveNotFoundCharDecodeState();
 
     /**
-     * Check if any one character command
+     * Find quotes within subcommands
      *
-     * @since S60 5.0
+     * @since TB9.2
+     * @param aCharacter Character to check
      * @param aStartIndex Start index (doesn't change)
-     * @return ETrue if any one character command, EFalse otherwise
+     * @param aEndIndex End index (changes)
+     * @return Symbian error code on error, KErrNone otherwise
      */
-    TBool IsOneCharacterCommand( TInt aStartIndex );
+    TBool FindSubCommandQuotes( TChar aCharacter, TInt aStartIndex, TInt& aEndIndex );
 
     /**
-     * Check if one character "A" command
+     * Check if in next subcommand's extended border
      *
-     * @since S60 5.0
+     * @since TB9.2
+     * @param aCharacter Extended character to check
      * @param aStartIndex Start index (doesn't change)
-     * @return ETrue if one character "A" command, EFalse otherwise
+     * @param aEndIndex End index (changes)
+     * @return ETrue if in next command's extended border, EFalse otherwise
      */
-    TBool IsOneCharacterACommand( TInt aStartIndex );
+    TBool IsExtendedBorder( TChar aCharacter, TInt aStartIndex, TInt& aEndIndex );
+    
+    /**
+     * Finds subcommand with alphanumeric borders
+     *
+     * @since TB9.2
+     * @param aCharacter Character to check
+     * @param aEndIndex End index (changes)
+     * @return ETrue if alpha border found, EFalse otherwise
+     */
+    TBool FindSubCommandAlphaBorder( TChar aCharacter, TInt& aEndIndex );
+
+    /**
+     * Finds subcommand
+     *
+     * @since TB9.2
+     * @param aStartIndex Start index (doesn't change)
+     * @param aEndIndex End index (changes)
+     * @return Symbian error code on error, KErrNone otherwise
+     */
+    TInt FindSubCommand( TInt aStartIndex, TInt& aEndIndex );
 
     /**
      * Check if "A/" command

@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2009 Nokia Corporation and/or its subsidiary(-ies).
+* Copyright (c) 2010 Nokia Corporation and/or its subsidiary(-ies).
 * All rights reserved.
 * This component and the accompanying materials are made available
 * under the terms of "Eclipse Public License v1.0"
@@ -18,11 +18,13 @@
 #include "DunAtSpecialCmdHandler.h"
 #include "DunDebug.h"
 
-// AT command(s) below is part of the AT&FE0Q0V1&C1&D2+IFC=3,1. command which
-// is sent by MAC
-_LIT8(KSpecialATCmd1, "AT&F");
-// Number of special commands
 const TInt KDefaultGranularity = 1;
+
+// AT command(s) below is part of the AT&FE0Q0V1&C1&D2+IFC=3,1. command which
+// is sent by MAC. There is no delimiter between "AT&F" and "E0".
+// Only list those commands where alphabetical boundary detection is needed
+// (i.e. "AT&F0" is not needed as "AT&F0E0" has non-alphabetical boundary)
+_LIT8( KSpecialATCmd1, "AT&F" );
 
 // ---------------------------------------------------------------------------
 // Two-phased constructor.
@@ -42,7 +44,7 @@ CDunAtSpecialCmdHandler* CDunAtSpecialCmdHandler::NewL()
 // ---------------------------------------------------------------------------
 //
 CDunAtSpecialCmdHandler::CDunAtSpecialCmdHandler()
-    {    
+    {
     }
 
 // ---------------------------------------------------------------------------
@@ -51,9 +53,9 @@ CDunAtSpecialCmdHandler::CDunAtSpecialCmdHandler()
 //
 void CDunAtSpecialCmdHandler::ConstructL()
     {
-    iSpecialCmds = new (ELeave) CDesC8ArrayFlat(KDefaultGranularity);
-    // Add here all special commands which need to be handled    
-    iSpecialCmds->AppendL(KSpecialATCmd1);
+    iSpecialCmds = new (ELeave) CDesC8ArrayFlat( KDefaultGranularity );
+    // Add here all special commands which need to be handled
+    iSpecialCmds->AppendL( KSpecialATCmd1 );
     }
 
 // ---------------------------------------------------------------------------
@@ -68,36 +70,35 @@ CDunAtSpecialCmdHandler::~CDunAtSpecialCmdHandler()
     }
 
 // ---------------------------------------------------------------------------
-// Checks if the command has to be treated special way
+// Checks if the command has to be treated special way.
 // For example in case of MAC, it sends command AT&FE0Q0V1&C1&D2+IFC=3,1.
 // meaning there is no delimiters in the command.
 // In case of MAC we try to search AT&F (sub command) string from the beginning
-// of the command. 
+// of the command.
 // Search is done character by character basis.
 // ---------------------------------------------------------------------------
 //
-TBool CDunAtSpecialCmdHandler::IsCompleteSubCommand (TChar aCharacter)
+TBool CDunAtSpecialCmdHandler::IsCompleteSubCommand( TChar aCharacter )
     {
     FTRACE(FPrint( _L("CDunAtSpecialCmdHandler::IsCompleteSubCommand()") ));
-    iBuffer.Append(aCharacter);
+    iBuffer.Append( aCharacter );
     TBool completeSubCmd = EFalse;
-    
-    if( !IsDataReadyForComparison( iBuffer.Length()) )
+
+    if( !IsDataReadyForComparison(iBuffer.Length()) )
         {
         // No need to do comparison because we don't have correct amount of data
         FTRACE(FPrint( _L("CDunAtSpecialCmdHandler::IsCompleteSubCommand(), no need to compare") ));
         return completeSubCmd;
-        }   
-    
+        }
+
     TInt count = iSpecialCmds->Count();
-    for( TInt i = 0 ; i < count ; i++ )
+    for ( TInt i=0; i<count; i++ )
         {
         if( iSpecialCmds->MdcaPoint(i).Compare(iBuffer) == 0 )
             {
             FTRACE(FPrint( _L("CDunAtSpecialCmdHandler::IsCompleteSubCommand(), match found, cmd index %d"), i ));
             // Reset internal buffer for next comparison.
-            iBuffer.FillZ();
-            iBuffer.Zero();            
+            ResetComparisonBuffer();
             completeSubCmd = ETrue;
             break;
             }
@@ -107,57 +108,34 @@ TBool CDunAtSpecialCmdHandler::IsCompleteSubCommand (TChar aCharacter)
     }
 
 // ---------------------------------------------------------------------------
-// Checks if the command has to be treated special way
-// For example in case of MAC, it sends command AT&FE0Q0V1&C1&D2+IFC=3,1.
-// meaning there is no delimiters in the command.
-// In case of MAC we try to search AT&F (sub command) string from the beginning
-// of the command. 
-// Search is done string basis.
+// Resets the buffer used for comparisons
 // ---------------------------------------------------------------------------
 //
-TBool CDunAtSpecialCmdHandler::IsCompleteSubCommand(TDesC8& aDes, TInt aStartIndex, TInt& aEndIndex)
+void CDunAtSpecialCmdHandler::ResetComparisonBuffer()
     {
-    FTRACE(FPrint( _L("CDunAtSpecialCmdHandler::IsCompleteSubCommand()") ));
-    TBool completeSubCmd = EFalse;
-    if( aDes.Length() <  MinimumLength() || aStartIndex != 0 )
-        {
-        // No need to do comparison because we don't have correct amount of data or
-        // we are not at the beginning of the input buffer (non decoded buffer)
-        FTRACE(FPrint( _L("CDunAtSpecialCmdHandler::IsCompleteSubCommand(), no need to compare") ));
-        return completeSubCmd;
-        }   
-        
-    TInt count = iSpecialCmds->Count();
-    for( TInt i = 0 ; i < count ; i++ )
-        {
-        TInt length = iSpecialCmds->MdcaPoint(i).Length();
-        TPtrC8 cmd = aDes.Mid(0, length);
-        if( iSpecialCmds->MdcaPoint(i).Compare(cmd) == 0 )
-            {
-            FTRACE(FPrint( _L("CDunAtSpecialCmdHandler::IsCompleteSubCommand(), match found, cmd index %d"), i ));
-            aEndIndex = length - 1;
-            completeSubCmd = ETrue;
-            break;
-            }
-        }
-    FTRACE(FPrint( _L("CDunAtSpecialCmdHandler::IsCompleteSubCommand() complete") ));
-    return completeSubCmd;
+    FTRACE(FPrint( _L("CDunAtSpecialCmdHandler::ResetComparisonBuffer()") ));
+    iBuffer.FillZ();
+    iBuffer.Zero();
+    FTRACE(FPrint( _L("CDunAtSpecialCmdHandler::ResetComparisonBuffer() complete") ));
     }
 
 // ---------------------------------------------------------------------------
 // Defines when comparison is excecuted, checks if the data lengths are equal.
 // ---------------------------------------------------------------------------
 //
-TBool CDunAtSpecialCmdHandler::IsDataReadyForComparison(TInt aLength)
+TBool CDunAtSpecialCmdHandler::IsDataReadyForComparison( TInt aLength )
     {
+    FTRACE(FPrint( _L("CDunAtSpecialCmdHandler::IsDataReadyForComparison()") ));
     TInt count = iSpecialCmds->Count();
-    for( TInt i = 0 ; i < count ; i++ )
+    for ( TInt i=0; i<count; i++ )
         {
         if( iSpecialCmds->MdcaPoint(i).Length() == aLength )
             {
+            FTRACE(FPrint( _L("CDunAtSpecialCmdHandler::IsDataReadyForComparison() (ready) complete") ));
             return ETrue;
             }
         }
+    FTRACE(FPrint( _L("CDunAtSpecialCmdHandler::IsDataReadyForComparison() (not ready) complete") ));
     return EFalse;
     }
 
@@ -167,9 +145,10 @@ TBool CDunAtSpecialCmdHandler::IsDataReadyForComparison(TInt aLength)
 //
 TInt CDunAtSpecialCmdHandler::MinimumLength()
     {
+    FTRACE(FPrint( _L("CDunAtSpecialCmdHandler::MinimumLength()") ));
     TInt length = iSpecialCmds->MdcaPoint(0).Length();
     TInt count = iSpecialCmds->Count();
-    for( TInt i = 1 ; i < count ; i++ )
+    for ( TInt i=1; i<count; i++ )
         {
         if( iSpecialCmds->MdcaPoint(i).Length() < length )
             {
@@ -177,5 +156,6 @@ TInt CDunAtSpecialCmdHandler::MinimumLength()
             break;
             }
         }
+    FTRACE(FPrint( _L("CDunAtSpecialCmdHandler::MinimumLength() complete") ));
     return length;
     }
