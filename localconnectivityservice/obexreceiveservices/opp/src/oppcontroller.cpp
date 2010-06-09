@@ -593,7 +593,8 @@ TBool COPPController::CheckCapacityL()
             iDrive = imsDrive;            
             }
         }
-    else
+    
+    if ( iDrive == EDriveZ)
         {
         err = rfs.Volume(volumeInfo, mmcDrive);
         if ( !err )

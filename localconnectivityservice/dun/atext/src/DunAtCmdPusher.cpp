@@ -274,9 +274,15 @@ TInt CDunAtCmdPusher::CheckAndRemoveOkString()
     FTRACE(FPrint( _L("CDunAtCmdPusher::CheckAndRemoveOkString()") ));
     TInt recvBufferLength = iRecvBuffer.Length();
     TInt okBufferLength = iOkBuffer->Length();
-    if ( recvBufferLength <= okBufferLength )
+    // Skip the removal if removing not possible, if removal results in zero
+    // length (plugin should have used KErrReplyTypeOk) or if string to be
+    // removed is zero.
+    // Note also that if plugin sends a final reply when quiet mode is on, DUN
+    // can't remove the possibly existing result code as it is different from
+    // iOkReply (zero length).
+    if ( recvBufferLength<=okBufferLength || okBufferLength<=0 )
         {
-        FTRACE(FPrint( _L("CDunAtCmdPusher::CheckAndRemoveOkString() (ERROR) complete") ));
+        FTRACE(FPrint( _L("CDunAtCmdPusher::CheckAndRemoveOkString() (skip) complete") ));
         return KErrGeneral;
         }
     TInt lengthWithNoOk = recvBufferLength - okBufferLength;

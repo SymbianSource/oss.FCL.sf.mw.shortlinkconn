@@ -34,7 +34,7 @@
 #include <btnotif.h>        	// Notifier UID's
 #include <aknnotewrappers.h> 	//For notifier
 #include <featmgr.h>
-#include <secondarydisplay/obexutilssecondarydisplayapi.h>
+#include <SecondaryDisplay/obexutilssecondarydisplayapi.h>
 
 const TInt KIrMtmUiConnectionTimeout     = 20000000;
 const TInt KIrMtmUiReceiveTimeout        = 0;

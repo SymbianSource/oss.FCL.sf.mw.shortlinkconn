@@ -19,7 +19,7 @@
 #include <bautils.h>
 #include <featmgr.h>
 #include <aknSDData.h>
-#include <secondarydisplay/dunsecondarydisplayapi.h>
+#include <SecondaryDisplay/dunsecondarydisplayapi.h>
 #include "DunNoteHandler.h"
 #include "DunDebug.h"
 

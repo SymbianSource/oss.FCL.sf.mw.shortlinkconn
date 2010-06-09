@@ -21,7 +21,7 @@
 #include "obexutilslaunchwaiter.h"
 #include "obexutilsdebug.h"
 
-#include <secondarydisplay/obexutilssecondarydisplayapi.h>
+#include <SecondaryDisplay/obexutilssecondarydisplayapi.h>
 #include <Obexutils.rsg>
 #include <aknnotewrappers.h>
 #include <AknGlobalConfirmationQuery.h>
