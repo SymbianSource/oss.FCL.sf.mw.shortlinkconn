@@ -261,6 +261,17 @@ TInt COPPController::PutPacketIndication()
         }
     
     iTotalSizeByte = iObexObject->Length();     // get size of receiving file
+    
+    if(iObexObject->Name().Length() > KMaxFileName)
+        {
+        TRACE_INFO( _L( "[oppreceiveservice] COPPController: PutPacketIndication truncating name of file being received\t" ) );
+        TRAPD(err, iObexObject->SetNameL(iObexObject->Name().Left(KMaxFileName)));
+        if(err != KErrNone)
+            {
+            return KErrAccessDenied;
+            }
+        }
+    
     iReceivingFileName = iObexObject->Name();   // get name of receiving file
     
     // Check that capacity is suitable as soon as possible
@@ -279,10 +290,7 @@ TInt COPPController::PutPacketIndication()
             return KErrDiskFull;
             }
         }
-    if(iObexObject->Name().Length() > KMaxFileName)
-        {
-        return KErrAccessDenied;
-        }
+
     if(iObexTransferState == ETransferPutDiskError)
         {
         return KErrDiskFull;
