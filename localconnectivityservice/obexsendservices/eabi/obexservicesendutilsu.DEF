@@ -9,8 +9,8 @@ EXPORTS
 	_ZN23CBTServiceParameterList9AddImageLE5RFile @ 8 NONAME
 	_ZN23CBTServiceParameterList9AddImageLERK7TDesC16 @ 9 NONAME
 	_ZN23CBTServiceParameterList9AddXhtmlLERK7TDesC16 @ 10 NONAME
-	_ZTI13CBTServiceAPI @ 11 NONAME ; #<TI>#
-	_ZTI23CBTServiceParameterList @ 12 NONAME ; #<TI>#
-	_ZTV13CBTServiceAPI @ 13 NONAME ; #<VT>#
-	_ZTV23CBTServiceParameterList @ 14 NONAME ; #<VT>#
+	_ZTI13CBTServiceAPI @ 11 NONAME
+	_ZTI23CBTServiceParameterList @ 12 NONAME
+	_ZTV13CBTServiceAPI @ 13 NONAME
+	_ZTV23CBTServiceParameterList @ 14 NONAME
 

@@ -915,11 +915,14 @@ TBool CDunAtCmdHandler::ExtractNextDecodedCommand( TBool aPeek )
         iParseInfo.iLimit = cmdLength;
         }
     // Next create a new command
-    if ( !iDecodeInfo.iFirstDecode && !specialCmd )
+    if ( !iDecodeInfo.iFirstDecode )
         {
         _LIT( KAtMsg, "AT" );
         iDecodeInfo.iDecodeBuffer.Append( KAtMsg );
-        iParseInfo.iLimit += 2;  // Length of "AT"
+        if ( !specialCmd )  // Already added with CheckSpecialCommand()
+            {
+            iParseInfo.iLimit += 2;  // Length of "AT"
+            }
         // Note: The length of iDecodeBuffer is not exceeded here because "AT"
         // is added only for the second commands after that.
         }
@@ -1053,9 +1056,18 @@ TBool CDunAtCmdHandler::CheckSpecialCommand( TInt aStartIndex,
                                              TInt& aEndIndex )
     {
     FTRACE(FPrint( _L("CDunAtCmdHandler::CheckSpecialCommand()") ));
-    TBuf8<KDunInputBufLength> upperBuf;
+    TInt atMsgLen = 0;
     TInt newLength = iInputBuffer.Length() - aStartIndex;
-    upperBuf.Copy( &iInputBuffer[aStartIndex], newLength );
+    TBuf8<KDunInputBufLength> upperBuf;
+    if ( !iDecodeInfo.iFirstDecode )
+        {
+        // For cases such as "ATM1L3DT*99#" "DT" must have "AT"
+        _LIT8( KATMsg, "AT" );
+        upperBuf.Copy( KATMsg );
+        atMsgLen = 2;  // "AT"
+        newLength += atMsgLen;
+        }
+    upperBuf.Append( &iInputBuffer[aStartIndex], newLength );
     upperBuf.UpperCase();
     TInt i;
     TInt count = iSpecials.Count();
@@ -1077,7 +1089,7 @@ TBool CDunAtCmdHandler::CheckSpecialCommand( TInt aStartIndex,
         if ( cmpResult == 0 )
             {
             iParseInfo.iLimit = specialLength;
-            aEndIndex = (origLength-1) + aStartIndex;
+            aEndIndex = (origLength-1) + aStartIndex - atMsgLen;
             FTRACE(FPrint( _L("CDunAtCmdHandler::CheckSpecialCommand() complete") ));
             return ETrue;
             }

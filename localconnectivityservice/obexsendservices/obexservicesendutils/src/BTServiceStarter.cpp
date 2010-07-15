@@ -73,6 +73,7 @@ void CBTServiceStarter::ConstructL()
     FLOG(_L("[BTSU]\t CBTServiceStarter::ConstructL()"));
     iDevice = CBTDevice::NewL();
     iDialog = CObexUtilsDialog::NewL( this );
+    iDelayedDestroyer = CBTServiceDelayedDestroyer::NewL(CActive::EPriorityStandard);
     FeatureManager::InitializeLibL();
     iFeatureManagerInitialized = ETrue;
     FLOG(_L("[BTSU]\t CBTServiceStarter::ConstructL() completed"));
@@ -109,7 +110,8 @@ CBTServiceStarter::~CBTServiceStarter()
     delete iController;
     delete iBTEngDiscovery;
     delete iDialog;
-
+    delete iDelayedDestroyer;
+    
     if(iWaiter && iWaiter->IsStarted() )
         {
         iWaiter->AsyncStop();
@@ -713,7 +715,7 @@ void CBTServiceStarter::ServiceAttributeSearchComplete( TSdpServRecordHandle /*a
     {
     FLOG(_L("[BTSU]\t CBTServiceStarter::ServiceAttributeSearchComplete()"));               
     TInt err = KErrNone;
-    if (aErr==KErrEof && aAttr.Count()>0 )
+    if ((aErr==KErrEof || aErr==KErrNone) && aAttr.Count()>0 )
         {            
         RSdpResultArray results=aAttr;    
         iBTEngDiscovery->ParseRfcommChannel(results,iClientChannel);          
@@ -782,9 +784,18 @@ void CBTServiceStarter::ServiceAttributeSearchComplete( TSdpServRecordHandle /*a
         iState = EBTSStarterFindingBIP;  
         iTriedOPP = ETrue;
         }
+    else if (aErr==KErrNone && aAttr.Count()==0)
+        {
+        //This isn't KErrEoF so we aren't done yet, wait for future matches
+        }
     else
         {
-        delete iBTEngDiscovery;
+        // Set destroyer AO active (destroys CBTEngDiscovery/CBTEngSdpQuery classes). This is done
+        // to ensure that CBTEngDiscovery/CBTEngSdpQuery classes have finished all their activities,
+        // callbacks etc.. Destructing it self is handled in CBTServiceDelayedDestroyer's RunL.
+        iDelayedDestroyer->SetDestructPointer(iBTEngDiscovery);
+        iDelayedDestroyer->GoActive();
+        // Set iBTEngDiscovery pointer to zero. Pointer doesn't exist CBTServiceStarter point of view anymore.
         iBTEngDiscovery = NULL;    
         StopTransfer(EBTSConnectingFailed);    
         }    

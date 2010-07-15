@@ -24,6 +24,7 @@
 #include "BTServiceAPI.h"
 #include "BTServiceUtils.h"
 #include "BTServiceParameterList.h"
+#include "BTServiceDelayedDestroyer.h"
 
 #include <btengdiscovery.h>
 #include <btengsettings.h>
@@ -438,6 +439,7 @@ NONSHARABLE_CLASS (CBTServiceStarter) : public CActive,
         TBool                       iFeatureManagerInitialized;
         TBool                       iTriedBIP;
         TBool                       iTriedOPP;
+        CBTServiceDelayedDestroyer* iDelayedDestroyer;
     };
 
 #endif      // BT_SERVICE_CONTROLLER_H
