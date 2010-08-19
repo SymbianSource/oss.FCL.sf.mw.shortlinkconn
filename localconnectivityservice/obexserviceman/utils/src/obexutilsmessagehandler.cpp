@@ -333,18 +333,22 @@ void TObexUtilsMessageHandler::RecogniseObjectsL(
         FLOG(_L("[OBEXUTILS]\t RecogniseObjectsL() MIME check failed"));
         }
     CleanupStack::PopAndDestroy();  // lsSess
+    
     HBufC* buf16 = HBufC::NewLC(mimeType.Length());
     buf16->Des().Copy(mimeType);
     TPtrC mimeType16(buf16->Des());
     CleanupStack::PopAndDestroy();   //   buf16
     
-    CUpdateMusicCollection* updateMusicCollection = CUpdateMusicCollection::NewL() ;
+    CUpdateMusicCollection* updateMusicCollection = CUpdateMusicCollection::NewL();
+    CleanupStack::PushL(updateMusicCollection);    
     if (updateMusicCollection->isSupported(mimeType16))
         {
         updateMusicCollection->addToCollectionL(aFileName);
         }
+    CleanupStack::PopAndDestroy();  // updateMusicCollection
     
     aAttachInfo->SetMimeTypeL( mimeType );
+    
     
     FLOG(_L("[OBEXUTILS]\t RecogniseObjectsL() completed"));
     }
@@ -927,7 +931,7 @@ EXPORT_C void TObexUtilsMessageHandler::SaveFileToFileSystemL(
     //
     TUint setAttMask(0);
     TUint clearAttMask(0);
-    User::LeaveIfError(aFile.Open(fsSess,tempFullName,EFileWrite));
+    User::LeaveIfError(aFile.Open(fsSess,tempFullName,EFileWrite|EFileShareReadersOrWriters));
     User::LeaveIfError(aFile.SetAtt(setAttMask , clearAttMask | KEntryAttHidden));
     aFile.Close();
     
@@ -1000,7 +1004,7 @@ EXPORT_C void TObexUtilsMessageHandler::AddEntryToInboxL(
         FLOG(_L("[OBEXUTILS]\t TObexUtilsMessageHandler::AddEntryToInboxL() BIO"));
     
         RFile file;
-        User::LeaveIfError(file.Open(fsSess,aFullName,EFileRead));
+        User::LeaveIfError(file.Open(fsSess,aFullName,EFileRead|EFileShareReadersOrWriters));
         TReceivedData receivedData;
         receivedData.bytesReceived = fileEntry.iSize;
         receivedData.recTime = fileEntry.iModified;
@@ -1056,37 +1060,40 @@ EXPORT_C void TObexUtilsMessageHandler::UpdateEntryAttachmentL (
     TFileName& aFullName,
     CMsvEntry* aParentEntry)
     {
+    
     FLOG(_L("[OBEXUTILS]\t TObexUtilsMessageHandler::UpdateEntryAttachmentL() "));
     CDummySessionObserver* sessionObs;
     CMsvSession* msvSession;
     CreateMsvSessionLC(sessionObs, msvSession);
     // 1st, 2nd push
-      
+    
     CMsvEntry* attachEntry = msvSession->GetEntryL(((*aParentEntry)[0]).Id());
     CleanupStack::PushL(attachEntry); // 3th push
-            
+          
     CMsvStore* store = attachEntry->EditStoreL();
     CleanupStack::PushL( store );  // 4th push
-  
+   
     CObexutilsEntryhandler* entryHandler = CObexutilsEntryhandler::NewL();
     CleanupStack::PushL(entryHandler);  // 5th push  
     
     // Note:
     // Because setFilePath() in CMsvAttachment is not implementated by Symbian yet, 
     // we have to delete the original attachment and add another new one to fix the broken link.
-    //
-    
+    //    
     // remove the old attachment first.
     //
     store->AttachmentManagerExtensionsL().RemoveAttachmentL(0);
+
     // Create a new attachment.
     //
+    
     CMsvAttachment* attachInfo = CMsvAttachment::NewL(CMsvAttachment::EMsvLinkedFile);
     CleanupStack::PushL(attachInfo);  // 6th  push
     
     // Get mime type
     //
     RecogniseObjectsL(aFullName, attachInfo);
+   
     RFs& fsSess = msvSession->FileSession();
     
     TParse fileNameParser;
@@ -1099,10 +1106,11 @@ EXPORT_C void TObexUtilsMessageHandler::UpdateEntryAttachmentL (
     entryHandler->AddEntryAttachment(aFullName,attachInfo, store);
     CleanupStack::Pop(attachInfo);   // attachInfo, Pass ownership to store
     CleanupStack::PopAndDestroy(entryHandler);  // entryHandler
-    FinaliseMessageL(aParentEntry, store,fileEntry, fileNameParser);
+    FinaliseMessageL(aParentEntry, store,fileEntry, fileNameParser);    
     CleanupStack::PopAndDestroy(4);   // store, 
-                                      // attachEntry, msvSession, sessionObs
+                                      // attachEntry, msvSession, sessionObs                                                                                    
     FLOG(_L("[OBEXUTILS]\t TObexUtilsMessageHandler::UpdateEntryAttachmentL() completed "));
+    
     }
 
 

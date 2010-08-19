@@ -117,19 +117,20 @@ void CObexUtilsLaunchWaiter::ConstructL( CMsvEntry* aMessage )
         }// EMsvFile
     
     if ( attachInfo->Type() == CMsvAttachment::EMsvLinkedFile )
-        {
-        CAiwGenericParamList* paramList = CAiwGenericParamList::NewLC();  // 4th push
-        TAiwGenericParam paramSave(EGenericParamFileSaved, ETrue);
-        paramList->AppendL( paramSave );
-        
+        {     
         if ( eikEnv )
-            {            
-            iDocumentHandler = CDocumentHandler::NewL( eikEnv->Process() );
-            iDocumentHandler->SetExitObserver( this );
+            {                        
             RFs rfs;
             User::LeaveIfError( rfs.Connect() );
             if ( BaflUtils::FileExists( rfs, filePath ) )                                 
                 {
+                CAiwGenericParamList* paramList = CAiwGenericParamList::NewLC();  // 4th push
+                TAiwGenericParam paramSave(EGenericParamFileSaved, ETrue);
+                paramList->AppendL( paramSave );
+            
+                iDocumentHandler = CDocumentHandler::NewL( eikEnv->Process() );
+                iDocumentHandler->SetExitObserver( this );
+                
                 RFile64 shareableFile;
                 TRAP( error, iDocumentHandler->OpenTempFileL(filePath,shareableFile));
                 if ( error == KErrNone)
@@ -137,19 +138,17 @@ void CObexUtilsLaunchWaiter::ConstructL( CMsvEntry* aMessage )
                     TRAP( error, iDocumentHandler->OpenFileEmbeddedL( shareableFile, dataType, *paramList));
                     }
                 shareableFile.Close();
+                CleanupStack::PopAndDestroy(); // paramList 
                 
                 if ( error == KErrNotSupported )  
-                    {                    
-                    delete iDocumentHandler;
-                    iDocumentHandler = NULL;
-                    
+                    {                                                            
                     const TInt sortMethod = 2;  // 0 = 'By name', 1 = 'By type', 
                                                 // 2 = 'Most recent first' and 3 = 'Largest first'
                     TRAP (error, TObexUtilsUiLayer::LaunchFileManagerL( filePath, 
                                                                         sortMethod, 
-                                                                        ETrue )); // ETrue -> launch file manager in embedded mode.
-                    isCompleteSelf = ETrue;
+                                                                        ETrue )); // ETrue -> launch file manager in embedded mode.                    
                     }  // KErrNotSupported
+                isCompleteSelf = ETrue;                                         
                 }            
             else 
                 {
@@ -172,9 +171,7 @@ void CObexUtilsLaunchWaiter::ConstructL( CMsvEntry* aMessage )
                 }  
            
             rfs.Close();
-            } // eikEnv
-        
-        CleanupStack::PopAndDestroy(); // paramList                                     
+            } // eikEnv                                          
         } // EMsvLinkedFile
      
     

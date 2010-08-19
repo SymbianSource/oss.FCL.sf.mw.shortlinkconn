@@ -293,8 +293,22 @@ TInt CBIPController::PutPacketIndication()
     
     if (iBTObject)
         {
-        iTotalSizeByte = iBTObject->Length();     // get size of receiving file
+        if(iBTTransferState == ETransferPutDiskError)
+            {
+            return KErrDiskFull;
+            }
+        
+        if(iBTObject->Name().Length() > KMaxFileName)
+            {
+            TRACE_INFO( _L( "[oppreceiveservice] COPPController: PutPacketIndication truncating name of file being received\t" ) );
+            TRAPD(err, iBTObject->SetNameL(iBTObject->Name().Left(KMaxFileName)));
+            if(err != KErrNone)
+                {
+                return KErrAccessDenied;
+                }
+            }     
         iReceivingFileName = iBTObject->Name();   // get name of receiving file
+        iTotalSizeByte = iBTObject->Length();     // get size of receiving file                       
         
         // Check that capacity is suitable as soon as possible
         if(!iLengthHeaderReceived && iTotalSizeByte > 0)
@@ -312,14 +326,8 @@ TInt CBIPController::PutPacketIndication()
                 return KErrDiskFull;
                 }
             }
-        if(iBTObject->Name().Length() > KMaxFileName)
-            {
-            return KErrAccessDenied;
-            }
-        if(iBTTransferState == ETransferPutDiskError)
-            {
-            return KErrDiskFull;
-            }
+        
+        
         // successfully received put packet if we reached here
         iBTTransferState = ETransferPut;
         

@@ -106,7 +106,7 @@ void COPPController::ErrorIndication( TInt TRACE_ONLY(aError) )
 void COPPController::AbortIndication()
 	{
 	TRACE_FUNC
-	HandleError(ETrue); // true because explicit abort
+	HandleError(EFalse); // false because note about receiving failed should appear
 	}
 
 void COPPController::HandleError(TBool aAbort)
@@ -484,7 +484,7 @@ void COPPController::HandlePutRequestL()
         User::Leave(KErrGeneral);
         }
     
-    User::LeaveIfError(iFile.Open(iFs,iFullPathFilename,EFileWrite));   
+    User::LeaveIfError(iFile.Open(iFs,iFullPathFilename,EFileWrite|EFileShareReadersOrWriters));   
     TObexRFileBackedBuffer bufferdetails(*iBuf,iFile,CObexBufObject::EDoubleBuffering);    
     
     TRAPD(err, iObexObject->SetDataBufL( bufferdetails) );
