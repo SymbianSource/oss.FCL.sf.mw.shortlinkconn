@@ -1,0 +1,81 @@
+/*
+* Copyright (c) 2007-2008 Nokia Corporation and/or its subsidiary(-ies).
+* All rights reserved.
+* This component and the accompanying materials are made available
+* under the terms of "Eclipse Public License v1.0"
+* which accompanies this distribution, and is available
+* at the URL "http://www.eclipse.org/legal/epl-v10.html".
+*
+* Initial Contributors:
+* Nokia Corporation - initial contribution.
+*
+* Contributors:
+*
+* Description:  Resource definitions for touch functional plug in
+*
+*/
+
+
+
+
+#include "registryinfov2.rh"
+#include "AknIndicatorPluginImplUIDs.hrh"
+
+
+
+RESOURCE REGISTRY_INFO theInfo
+	{
+	resource_format_version = RESOURCE_FORMAT_VERSION_2;
+	dll_uid     = 0x10204DAE; // Plugin dll UID
+	interfaces  = 
+		{
+		INTERFACE_INFO
+			{
+			interface_uid   = KAknIndicatorPluginInterfaceUid;
+										
+			implementations = 
+				{				
+				IMPLEMENTATION_INFO
+					{
+					implementation_uid  = KImplUIDBTIndicatorsPlugin;
+					version_no          = 1;
+					display_name        = "LC Stylus Tap Plug in for BT"; // Plugin debug name
+					default_data        = "lcstylustapbt"; // Parent UID
+					opaque_data         = ""; 
+                    // This implementation CANNOT be overridden by a RAM-based plug-in
+                    rom_only = 1;
+					},
+				IMPLEMENTATION_INFO
+					{
+					implementation_uid  = KImplUIDUSBIndicatorsPlugin;
+					version_no          = 1;
+					display_name        = "LC Stylus Tap Plug in for USB"; // Plugin debug name
+					default_data        = "lcstylustapusb"; // Parent UID
+					opaque_data         = ""; 
+                    // This implementation CANNOT be overridden by a RAM-based plug-in
+                    rom_only = 1;
+					},
+				IMPLEMENTATION_INFO
+					{
+					implementation_uid  = KImplUIDIRIndicatorsPlugin;
+					version_no          = 1;
+					display_name        = "LC Stylus Tap Plug in for IRDA"; // Plugin debug name
+					default_data        = "lcstylustapirda"; // Parent UID
+					opaque_data         = ""; 
+                    // This implementation CANNOT be overridden by a RAM-based plug-in
+                    rom_only = 1;
+					},
+				IMPLEMENTATION_INFO
+				    {
+					implementation_uid  = 0x20026FC4;
+					version_no          = 1;
+					display_name        = "LC Stylus Tap Plug in for USBMEM"; // Plugin debug name
+					default_data        = "lcstylustapusbmem"; // Parent UID
+					opaque_data         = ""; 
+					// This implementation CANNOT be overridden by a RAM-based plug-in
+					rom_only = 1;
+					}	
+				};
+			}
+		};
+	}

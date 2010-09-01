@@ -1,0 +1,53 @@
+/*
+* Copyright (c) 2002 Nokia Corporation and/or its subsidiary(-ies).
+* All rights reserved.
+* This component and the accompanying materials are made available
+* under the terms of "Eclipse Public License v1.0"
+* which accompanies this distribution, and is available
+* at the URL "http://www.eclipse.org/legal/epl-v10.html".
+*
+* Initial Contributors:
+* Nokia Corporation - initial contribution.
+*
+* Contributors:
+*
+* Description: 
+*     
+*     
+*
+*/
+
+
+#include <eikon.rh>
+#include "registryinfov2.rh" 
+#include "IrSendingServiceUIDS.hrh"
+#include <AiwCommon.hrh>
+
+RESOURCE REGISTRY_INFO theInfo
+	{
+	resource_format_version = RESOURCE_FORMAT_VERSION_2; 
+	dll_uid = KIRSendingServiceDllUid;
+	interfaces = 
+		{
+		INTERFACE_INFO
+            {
+            interface_uid = KAiwClassMenu;
+            implementations = 
+                {
+                IMPLEMENTATION_INFO
+                    {
+                    implementation_uid = KIRSendingServiceImplUid;
+                    version_no = 1;
+                    display_name = "";
+                    default_data = "*";
+                    opaque_data = KAiwCmdSendStr;
+                    rom_only = 1;
+                    }
+                };
+            }	
+		};
+	}
+
+// End of file
+
+
