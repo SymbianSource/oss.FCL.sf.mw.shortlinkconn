@@ -1268,11 +1268,11 @@ TInt CParser::HandleGlobalReportSize( const TItem& aItem )
 TInt CParser::HandleGlobalReportCount( const TItem& aItem )
     {
     TRACE_INFO((_L("Global report count %d\n"), aItem.Data()));
-    TInt retVal = 0;
+    TInt retVal = ENoError;
     iGlobal.iCount = aItem.Data();
     if (aItem.Data() == 0)
         {
-        retVal = EZeroReportCount;
+        TRACE_INFO((_L("Global report count zero\n")));	     
         }
     iItemsDefined |= EReportCount;
 

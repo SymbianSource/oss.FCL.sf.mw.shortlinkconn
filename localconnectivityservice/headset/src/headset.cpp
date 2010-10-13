@@ -162,7 +162,14 @@ void CHidHeadsetDriver::Stop()
 TInt CHidHeadsetDriver::DataIn( CHidTransport::THidChannelType aChannel,
         const TDesC8& aPayload )
     {
+    // validate input data
+    if (0 >= aPayload.Length())
+        {
+        return KErrArgument;
+        }
+
     TInt retVal = KErrNone;
+    
     switch ( aChannel )
         {
         case CHidTransport::EHidChannelInt:

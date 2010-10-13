@@ -608,7 +608,9 @@ private:
      * @param aEndIndex End index (changes)
      * @return Symbian error code on error, KErrNone otherwise
      */
-    TBool FindSubCommandQuotes( TChar aCharacter, TInt aStartIndex, TInt& aEndIndex );
+    TBool FindSubCommandQuotes( TChar aCharacter,
+                                TInt aStartIndex,
+                                TInt& aEndIndex );
 
     /**
      * Check if in next subcommand's extended border
@@ -619,7 +621,9 @@ private:
      * @param aEndIndex End index (changes)
      * @return ETrue if in next command's extended border, EFalse otherwise
      */
-    TBool IsExtendedBorder( TChar aCharacter, TInt aStartIndex, TInt& aEndIndex );
+    TBool IsExtendedBorder( TChar aCharacter,
+                            TInt aStartIndex,
+                            TInt& aEndIndex );
 
     /**
      * Finds subcommand with alphanumeric borders

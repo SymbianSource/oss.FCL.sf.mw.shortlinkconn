@@ -92,7 +92,6 @@ TInt CDunNoteHandler::IssueRequest()
         return retTrap;
         }
     SetActive();
-    iNoteState = EDunStateUiNoting;
     FTRACE(FPrint( _L("CDunNoteHandler::IssueRequest() complete") ));
     return KErrNone;
     }
@@ -176,6 +175,7 @@ void CDunNoteHandler::DoIssueRequestL()
     note->SetSecondaryDisplayData( sdData );  // ownership transferred
     // Start to show note
     iStatus = KRequestPending;
+    iNoteState = EDunStateUiNoting;
     note->ShowConfirmationQueryL( iStatus,
                                   *unicodeString,
                                   R_AVKON_SOFTKEYS_OK_EMPTY,

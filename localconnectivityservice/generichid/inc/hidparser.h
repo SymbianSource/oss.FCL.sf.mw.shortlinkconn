@@ -29,6 +29,7 @@ class TItem;
  */
 enum THidParserError
     {
+    ENoError                        =0,	
     // General:
     //
     EUnknownItem                    = 0xbf00,

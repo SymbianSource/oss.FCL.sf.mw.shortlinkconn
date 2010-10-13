@@ -147,7 +147,7 @@ void CObexUtilsLaunchWaiter::ConstructL( CMsvEntry* aMessage )
                     TRAP (error, TObexUtilsUiLayer::LaunchFileManagerL( filePath, 
                                                                         sortMethod, 
                                                                         ETrue )); // ETrue -> launch file manager in embedded mode.                    
-										isCompleteSelf = ETrue; 
+					isCompleteSelf = ETrue; 
                     }  // KErrNotSupported
                                         
                 }            

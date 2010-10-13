@@ -53,6 +53,11 @@
  * Refer to test specification if planning to change the heuristic.
  * Note2: Input buffer management (ExtractLineFromInputBuffer()) can be tested
  * with non-line based terminals such as HyperTerminal or Realterm.
+ * Note3: If there is a need to handle commands with random data, the extended
+ * command checking can interfere with the character set of this random data.
+ * Best way to handle this random data is to create a handler for these commands
+ * which skips the valid "not to be parsed" data or use quotes. For these cases
+ * the CDunAtSpecialCmdHandler could be extended.
  */
 
 #include "DunAtCmdHandler.h"
@@ -1162,6 +1167,8 @@ TBool CDunAtCmdHandler::ExtractNextSubCommand( TBool aPeek )
         iDecodeInfo.iCmdsHandled++;
         FTRACE(FPrint( _L("CDunAtCmdHandler::ExtractNextSubCommand() (handled=%d)"), iDecodeInfo.iCmdsHandled ));
         }
+    FTRACE(FPrint( _L("CDunAtCmdPusher::ExtractNextSubCommand() extracted:") ));
+    FTRACE(FPrintRaw(iParseInfo.iSendBuffer) );
     FTRACE(FPrint( _L("CDunAtCmdHandler::ExtractNextSubCommand() complete") ));
     return ETrue;
     }
@@ -1245,6 +1252,16 @@ TBool CDunAtCmdHandler::IsDelimiterCharacter( TChar aCharacter )
 TBool CDunAtCmdHandler::IsExtendedCharacter( TChar aCharacter )
     {
     FTRACE(FPrint( _L("CDunAtCmdHandler::IsExtendedCharacter()") ));
+    // Extended characters supported by this function (parser understands these)
+    // '+': Universal; mentioned in 3GPP TS 27.007, 3GPP TS 27.005, ITU-T V.250
+    // '&': Mentioned in ITU-T V.250 and in some "de facto" commands
+    // '%': Used by some old Hayes modems, left just in case
+    // '\': Used by some old Hayes modems, left just in case
+    // '*': Used by some old Hayes modems, AT&T and others
+    // '#': Used by some old Hayes modems, left just in case
+    // '$': Used by AT&T and Qualcomm
+    // '^': Used by China Mobile
+    // [please maintain this list here for quick reference]
     if ( aCharacter=='+'  || aCharacter=='&' || aCharacter=='%' ||
          aCharacter=='\\' || aCharacter=='*' || aCharacter=='#' ||
          aCharacter=='$'  || aCharacter=='^' )
@@ -1399,24 +1416,8 @@ TBool CDunAtCmdHandler::IsExtendedBorder( TChar aCharacter,
         {
         iDecodeInfo.iExtendedIndex = aEndIndex;
         SaveFoundCharDecodeState( aCharacter );
-        FTRACE(FPrint( _L("CDunAtCmdHandler::IsExtendedBorder() (no border normal) complete") ));
+        FTRACE(FPrint( _L("CDunAtCmdHandler::IsExtendedBorder() (no border) complete") ));
         return EFalse;
-        }
-    // Now suspect border found so peek the next character after the suspected
-    // extended character. If it is not alphabetical character, return with EFalse.
-    // This case is to detect the cases such as "AT+VTS={*,3000}", where '*' would
-    // be the start of the next command in normal cases.
-    TInt peekIndex = aEndIndex + 1;
-    TInt lineLength = iLineBuffer.Length();
-    if ( peekIndex < lineLength )
-        {
-        TChar nextCharacter = iLineBuffer[peekIndex];
-        if ( !nextCharacter.IsAlpha() )
-            {
-            SaveFoundCharDecodeState( aCharacter );
-            FTRACE(FPrint( _L("CDunAtCmdHandler::IsExtendedBorder() (no border special) complete") ));
-            return EFalse;
-            }
         }
     aEndIndex--;
     FTRACE(FPrint( _L("CDunAtCmdHandler::IsExtendedBorder() (border) complete") ));
@@ -1436,7 +1437,8 @@ TBool CDunAtCmdHandler::FindSubCommandAlphaBorder( TChar aCharacter,
         // Check the special case when assigning a number with "basic" command
         // and there is no delimiter after it. In this case <Numeric>|<Alpha>
         // border must be detected but only for a "basic" command, not for
-        // extended.
+        // extended. This type of case is in active use in initialization
+        // strings where "ATS7=60L1M1X3" is one example
         if ( iDecodeInfo.iExtendedIndex<0    && iDecodeInfo.iPrevExists &&
              iDecodeInfo.iPrevChar.IsDigit() && aCharacter.IsAlpha() )
             {
