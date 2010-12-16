@@ -42,7 +42,7 @@ const TInt KHidNotSetKeyValue = 0;
 const TInt KDoubleClickTimeout = 900000; // 0,9 seconds
 const TInt KDoubleClickTimeoutRing = 500000; // 0,5 seconds
 const TInt KScanClickTimeout = 500000; // 0,5 seconds
-const TInt KLongClickTimeout = 3000000; // 3 seconds
+const TInt KLongClickTimeout = 1500000; // 1,5 seconds
 
 // ======== MEMBER FUNCTIONS ========
 

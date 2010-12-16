@@ -405,6 +405,12 @@ TInt CGenericHid::DataIn(TInt aConnectionId,
     
     TSglQueIter<CDriverListItem> driverIter( iDriverList );
     driverIter.SetToFirst();    
+    
+    if ( aPayload.Length() <=0 )
+        {
+        TRACE_INFO(_L("[HID]\tCGenericHid::DataIn Zero length hid report"));    
+        return KErrNone;    
+        }
 
     CDriverListItem* item = driverIter;
     TBool found = EFalse; 
